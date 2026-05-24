@@ -114,7 +114,7 @@ button {
 
 .stage-panel {
   position: relative;
-  min-height: 520px;
+  min-height: 610px;
   overflow: hidden;
   border-radius: 8px;
   background: #070808;
@@ -305,7 +305,7 @@ button {
   position: absolute;
   inset: auto 0 0;
   z-index: 2;
-  height: 58%;
+  height: 66%;
   background:
     radial-gradient(ellipse at 32% 68%, rgba(0, 0, 0, 0.38), transparent 24%),
     radial-gradient(ellipse at 73% 68%, rgba(0, 0, 0, 0.46), transparent 22%),
@@ -378,13 +378,11 @@ button {
 
 .hero-sprite {
   position: absolute;
-  left: 11%;
-  bottom: 54px;
+  left: 14%;
+  bottom: 78px;
   width: clamp(178px, 21vw, 280px);
   height: clamp(210px, 25vw, 340px);
-  animation:
-    heroStride 720ms steps(4, end) infinite,
-    heroAdvance 2.4s ease-in-out infinite;
+  animation: heroStride 720ms steps(4, end) infinite;
   z-index: 4;
   transform-origin: 50% 100%;
 }
@@ -424,14 +422,13 @@ button {
   filter:
     drop-shadow(0 22px 18px rgba(0, 0, 0, 0.62))
     drop-shadow(0 0 16px rgba(177, 39, 27, 0.16));
-  animation: heroFrame 720ms steps(4, end) infinite;
   transform-origin: 50% 100%;
 }
 
 .enemy-sprite {
   position: absolute;
   right: 15%;
-  bottom: 58px;
+  bottom: 82px;
   width: clamp(150px, 18vw, 250px);
   height: clamp(170px, 21vw, 300px);
   animation:
@@ -541,7 +538,7 @@ button {
 
 .enemy-boss .enemy-sprite {
   right: 10%;
-  bottom: 36px;
+  bottom: 62px;
   width: clamp(230px, 28vw, 400px);
   height: clamp(250px, 31vw, 440px);
 }
@@ -549,7 +546,7 @@ button {
 .loot-beam {
   position: absolute;
   right: 27%;
-  bottom: 58px;
+  bottom: 82px;
   width: 92px;
   height: 220px;
   filter: drop-shadow(0 0 22px rgba(242, 201, 76, 0.48));
@@ -603,12 +600,12 @@ button {
   position: absolute;
   left: 18px;
   right: 18px;
-  bottom: 18px;
+  bottom: 12px;
   display: grid;
   grid-template-columns: max-content minmax(140px, 1fr) 44px;
   align-items: center;
   gap: 14px;
-  padding: 14px;
+  padding: 10px 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(8, 10, 12, 0.72);
@@ -651,7 +648,7 @@ button {
 .stage-hud strong {
   display: block;
   color: var(--text-strong);
-  font-size: 1.2rem;
+  font-size: 1.02rem;
 }
 
 .healthbar,
@@ -968,16 +965,16 @@ kbd {
 @keyframes heroStride {
   0%,
   100% {
-    translate: 0 0;
+    transform: translateY(0) scaleY(1);
   }
   25% {
-    translate: 1px -3px;
+    transform: translateY(-3px) scaleY(0.992);
   }
   50% {
-    translate: 0 1px;
+    transform: translateY(1px) scaleY(1.008);
   }
   75% {
-    translate: -1px -2px;
+    transform: translateY(-2px) scaleY(0.996);
   }
 }
 
@@ -987,32 +984,6 @@ kbd {
   }
   to {
     background-position: 100% 50%;
-  }
-}
-
-@keyframes heroAdvance {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  45% {
-    transform: translateX(10px);
-  }
-}
-
-@keyframes heroFrame {
-  0%,
-  100% {
-    transform: rotate(-1deg) skewX(0deg) scaleY(1);
-  }
-  25% {
-    transform: rotate(1.2deg) skewX(-1deg) scaleY(0.985);
-  }
-  50% {
-    transform: rotate(0deg) skewX(0.8deg) scaleY(1.012);
-  }
-  75% {
-    transform: rotate(-1.4deg) skewX(1deg) scaleY(0.99);
   }
 }
 
