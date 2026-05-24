@@ -18,6 +18,10 @@ npm run dev
 - 经济：分解装备获得裂片，裂片可释放过载斩击。
 - 存档：使用 `localStorage` 保存，并计算最多 4 小时离线收益。
 
+## Design Docs
+
+- [横版暗黑 2.5D 挂机刷宝 ARPG：策划与技术方案](docs/game-design-and-tech-plan.md)
+
 ## Next Milestones
 
 1. 加入技能树与自动释放策略。
