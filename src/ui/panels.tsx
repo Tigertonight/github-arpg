@@ -36,6 +36,12 @@ export function StageView({ game }: { game: GameState }) {
   const hpPercent = Math.max(0, Math.round((game.enemy.currentLife / game.enemy.maxLife) * 100))
   const bleedPercent = Math.min(100, game.enemy.bleed.stacks * 11)
   const heroLifePercent = Math.max(0, Math.round((game.hero.currentLife / 120) * 100))
+  const enemySheetClass =
+    game.enemy.enemyDefId === 'rust_hound'
+      ? 'enemy-sheet-beast'
+      : ['black_forge_guard', 'vein_butcher'].includes(game.enemy.enemyDefId)
+        ? 'enemy-sheet-brute'
+        : 'enemy-sheet-humanoid'
   return (
     <div className={`stage-panel stage-${game.stageMode} enemy-${game.enemy.rank}`}>
       <div className="combat-hud">
@@ -87,16 +93,14 @@ export function StageView({ game }: { game: GameState }) {
             <img className="slash slash-b" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
           </>
         ) : null}
-        {!isTraveling ? (
-          <div className="enemy-sprite">
-            <div
-              className={`sprite-sheet enemy-walk-sheet ${game.enemy.enemyDefId === 'rust_hound' ? 'enemy-sheet-beast' : ['black_forge_guard', 'vein_butcher'].includes(game.enemy.enemyDefId) ? 'enemy-sheet-brute' : 'enemy-sheet-humanoid'}`}
-              style={{ backgroundImage: `url(${enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner})` }}
-              aria-hidden="true"
-            />
-            {game.enemy.rank !== 'normal' ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
-          </div>
-        ) : null}
+        <div className="enemy-sprite">
+          <div
+            className={`sprite-sheet enemy-walk-sheet ${enemySheetClass}`}
+            style={{ backgroundImage: `url(${enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner})` }}
+            aria-hidden="true"
+          />
+          {game.enemy.rank !== 'normal' && !isTraveling ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
+        </div>
         {game.lastDrop ? <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" /> : null}
         {game.floatingTexts.map((text, index) => (
           <div className={`floating-text ${text.kind}`} style={{ '--float-index': index } as CSSProperties} key={text.id}>

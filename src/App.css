@@ -130,7 +130,7 @@ button {
   background:
     linear-gradient(180deg, rgba(10, 12, 14, 0.08), rgba(7, 7, 8, 0.34)),
     url('/assets/game/black-forge-stage-bg.webp') 0 50% / 50% 100% repeat-x;
-  animation: stageMarch 30s linear infinite;
+  animation: stageMarch 18s linear infinite;
   animation-play-state: paused;
   will-change: transform;
 }
@@ -316,7 +316,7 @@ button {
     radial-gradient(ellipse at 73% 68%, rgba(0, 0, 0, 0.46), transparent 22%),
     linear-gradient(180deg, transparent 0%, rgba(5, 5, 5, 0.26) 48%, rgba(3, 3, 3, 0.5) 100%);
   background-size: auto;
-  animation: laneMove 1.8s linear infinite;
+  animation: laneMove 1.15s linear infinite;
   animation-play-state: paused;
 }
 
@@ -339,7 +339,7 @@ button {
   background:
     repeating-linear-gradient(90deg, transparent 0 68px, rgba(236, 171, 91, 0.32) 68px 74px, transparent 74px 144px);
   opacity: 0.26;
-  animation: trackSleepers 1.45s linear infinite;
+  animation: trackSleepers 1.05s linear infinite;
   animation-play-state: paused;
 }
 
@@ -415,9 +415,9 @@ button {
 }
 
 .stage-travel .hero-sprite {
-  left: 7%;
+  left: 18%;
   animation:
-    heroTravel 1.8s linear infinite,
+    heroRunAnchor 640ms steps(4, end) infinite,
     heroStride 720ms steps(4, end) infinite;
 }
 
@@ -480,6 +480,19 @@ button {
     enemyPress 3.1s ease-in-out infinite;
   z-index: 3;
   transform-origin: 50% 100%;
+}
+
+.stage-travel .enemy-sprite {
+  right: auto;
+  left: 112%;
+  animation:
+    enemyApproach 1.8s linear forwards,
+    enemyWalk 780ms steps(4, end) infinite;
+}
+
+.stage-travel.enemy-boss .enemy-sprite {
+  right: auto;
+  left: 112%;
 }
 
 .enemy-sprite img {
@@ -960,12 +973,15 @@ kbd {
   }
 }
 
-@keyframes heroTravel {
+@keyframes heroRunAnchor {
   0% {
-    transform: translateX(0);
+    transform: translateX(0) rotate(-0.4deg);
+  }
+  50% {
+    transform: translateX(2px) rotate(0.6deg);
   }
   100% {
-    transform: translateX(26vw);
+    transform: translateX(0) rotate(-0.4deg);
   }
 }
 
@@ -1047,6 +1063,20 @@ kbd {
   }
   50% {
     transform: translateX(-12px);
+  }
+}
+
+@keyframes enemyApproach {
+  0% {
+    left: 112%;
+    opacity: 0.2;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    left: 62%;
+    opacity: 1;
   }
 }
 
@@ -1240,7 +1270,7 @@ kbd {
   }
 
   .stage-travel .hero-sprite {
-    left: 5%;
+    left: 16%;
   }
 
   .enemy-sprite {
