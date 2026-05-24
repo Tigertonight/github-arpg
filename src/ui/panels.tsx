@@ -3,6 +3,16 @@ import { skillsById, runesById } from '../data/skills'
 import { formatAffix, getBuildTags, itemScore, rarityMeta, slotLabels } from '../domain/formulas'
 import type { CombatStats, GameState, ItemInstance, LootFilterRule } from '../domain/types'
 
+const gameAssetBase = '/assets/game'
+
+const enemySprites: Record<string, string> = {
+  bone_miner: `${gameAssetBase}/enemy-bone-miner.png`,
+  rust_hound: `${gameAssetBase}/enemy-rust-hound.png`,
+  coal_cultist: `${gameAssetBase}/enemy-coal-cultist.png`,
+  black_forge_guard: `${gameAssetBase}/enemy-black-forge-guard.png`,
+  vein_butcher: `${gameAssetBase}/enemy-vein-butcher.png`,
+}
+
 export function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="panel-title">
@@ -33,18 +43,15 @@ export function StageView({ game }: { game: GameState }) {
       </div>
       <div className="lane">
         <div className="hero-sprite" aria-label="破誓骑士">
-          <div className="hero-cape" />
-          <div className="hero-body" />
-          <div className="hero-blade" />
+          <img src={`${gameAssetBase}/oathbreaker-hero.png`} alt="" />
         </div>
-        <div className="slash slash-a" />
-        <div className="slash slash-b" />
+        <img className="slash slash-a" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
+        <img className="slash slash-b" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
         <div className="enemy-sprite">
-          <div className="enemy-core" />
-          <div className="enemy-eye" />
+          <img src={enemySprites[game.enemy.enemyDefId] ?? enemySprites.bone_miner} alt="" />
           {game.enemy.rank !== 'normal' ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
         </div>
-        {game.lastDrop ? <div className="loot-beam" /> : null}
+        {game.lastDrop ? <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" /> : null}
         {game.floatingTexts.map((text, index) => (
           <div className={`floating-text ${text.kind}`} style={{ '--float-index': index } as CSSProperties} key={text.id}>
             {text.label}

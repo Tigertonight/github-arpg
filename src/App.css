@@ -118,34 +118,23 @@ button {
   overflow: hidden;
   border-radius: 8px;
   background:
-    radial-gradient(circle at 20% 10%, rgba(255, 139, 61, 0.16), transparent 25%),
-    linear-gradient(180deg, #162330 0%, #12171b 48%, #090b0c 100%);
+    linear-gradient(180deg, rgba(10, 12, 14, 0.1), rgba(7, 7, 8, 0.34)),
+    url('/assets/game/black-forge-stage-bg.webp') center / cover no-repeat;
 }
 
 .lane-sky {
   position: absolute;
   inset: 0 0 30%;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .moon {
-  position: absolute;
-  top: 42px;
-  right: 11%;
-  width: 84px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #f4d694;
-  box-shadow: 0 0 40px rgba(244, 214, 148, 0.22);
+  display: none;
 }
 
 .cloud {
-  position: absolute;
-  width: 280px;
-  height: 42px;
-  border-radius: 999px;
-  background: rgba(208, 221, 224, 0.08);
-  animation: drift 18s linear infinite;
+  display: none;
 }
 
 .cloud-a {
@@ -164,19 +153,15 @@ button {
   inset: auto 0 0;
   height: 58%;
   background:
-    linear-gradient(90deg, transparent 0 10%, rgba(255, 255, 255, 0.07) 10% 10.4%, transparent 10.4% 20%),
-    linear-gradient(180deg, rgba(53, 68, 74, 0.24), transparent 34%),
-    #15110f;
-  background-size: 180px 100%, auto, auto;
+    radial-gradient(ellipse at 32% 68%, rgba(0, 0, 0, 0.38), transparent 24%),
+    radial-gradient(ellipse at 73% 68%, rgba(0, 0, 0, 0.46), transparent 22%),
+    linear-gradient(180deg, transparent 0%, rgba(5, 5, 5, 0.26) 48%, rgba(3, 3, 3, 0.5) 100%);
+  background-size: auto;
   animation: laneMove 2.8s linear infinite;
 }
 
 .rail {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: rgba(199, 164, 116, 0.35);
+  display: none;
 }
 
 .rail-a {
@@ -189,82 +174,52 @@ button {
 
 .hero-sprite {
   position: absolute;
-  left: 17%;
-  bottom: 90px;
-  width: 92px;
-  height: 132px;
+  left: 11%;
+  bottom: 54px;
+  width: clamp(178px, 21vw, 280px);
+  height: clamp(210px, 25vw, 340px);
   animation: idle 900ms ease-in-out infinite alternate;
+  z-index: 4;
 }
 
-.hero-body,
-.hero-cape,
-.enemy-core {
-  position: absolute;
-  border: 2px solid rgba(255, 255, 255, 0.22);
+.hero-sprite img,
+.enemy-sprite img,
+.slash,
+.loot-beam {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
-.hero-body {
-  right: 6px;
-  bottom: 6px;
-  width: 52px;
-  height: 86px;
-  border-radius: 26px 26px 12px 12px;
-  background: linear-gradient(160deg, #f5c06f, #7b3f24 58%, #16110e);
-}
-
-.hero-cape {
-  left: 4px;
-  bottom: 0;
-  width: 58px;
-  height: 104px;
-  border-radius: 36px 12px 24px 16px;
-  background: linear-gradient(180deg, #7f1d1d, #231012);
-  transform: skewX(-10deg);
-}
-
-.hero-blade {
-  position: absolute;
-  right: -32px;
-  bottom: 46px;
-  width: 58px;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #d9eef2, #6e8790);
-  box-shadow: 0 0 12px rgba(126, 217, 255, 0.7);
-  transform: rotate(58deg);
+.hero-sprite img {
+  filter:
+    drop-shadow(0 22px 18px rgba(0, 0, 0, 0.62))
+    drop-shadow(0 0 16px rgba(177, 39, 27, 0.16));
 }
 
 .enemy-sprite {
   position: absolute;
-  right: 20%;
-  bottom: 86px;
-  width: 116px;
-  height: 118px;
+  right: 15%;
+  bottom: 58px;
+  width: clamp(150px, 18vw, 250px);
+  height: clamp(170px, 21vw, 300px);
   animation: enemyHit 900ms ease-in-out infinite;
+  z-index: 3;
 }
 
-.enemy-core {
-  inset: 12px 8px 0;
-  border-radius: 48% 52% 36% 36%;
-  background: linear-gradient(150deg, #1f3136, #0b1113 58%);
-  box-shadow: inset 0 -18px 0 rgba(0, 0, 0, 0.22);
-}
-
-.enemy-eye {
-  position: absolute;
-  top: 42px;
-  right: 34px;
-  width: 16px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--ember);
-  box-shadow: 0 0 16px rgba(255, 120, 68, 0.9);
+.enemy-sprite img {
+  filter:
+    drop-shadow(0 20px 18px rgba(0, 0, 0, 0.68))
+    drop-shadow(0 0 12px rgba(240, 116, 62, 0.12));
 }
 
 .enemy-crown {
   position: absolute;
-  top: -12px;
-  right: 12px;
+  top: 10px;
+  right: 20px;
   padding: 3px 7px;
   border: 1px solid rgba(255, 138, 61, 0.72);
   border-radius: 4px;
@@ -275,24 +230,23 @@ button {
   letter-spacing: 0.08em;
 }
 
-.enemy-boss .enemy-core {
-  border-color: rgba(255, 57, 57, 0.55);
-  box-shadow:
-    inset 0 -18px 0 rgba(0, 0, 0, 0.22),
-    0 0 34px rgba(180, 28, 28, 0.45);
+.enemy-boss .enemy-sprite {
+  right: 10%;
+  bottom: 36px;
+  width: clamp(230px, 28vw, 400px);
+  height: clamp(250px, 31vw, 440px);
 }
 
 .loot-beam {
   position: absolute;
-  right: 28%;
-  bottom: 84px;
-  width: 32px;
-  height: 190px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 202, 89, 0), rgba(255, 202, 89, 0.78), rgba(255, 202, 89, 0));
-  filter: blur(1px);
-  opacity: 0.72;
+  right: 27%;
+  bottom: 58px;
+  width: 92px;
+  height: 220px;
+  filter: drop-shadow(0 0 22px rgba(242, 201, 76, 0.48));
+  opacity: 0.86;
   animation: beamPulse 900ms ease-out infinite;
+  z-index: 2;
 }
 
 .floating-text {
@@ -320,19 +274,19 @@ button {
 
 .slash {
   position: absolute;
-  right: 36%;
-  bottom: 154px;
-  width: 128px;
-  height: 4px;
-  border-radius: 999px;
-  background: #ecf8ff;
+  right: 40%;
+  bottom: 160px;
+  width: clamp(150px, 18vw, 250px);
+  height: clamp(100px, 12vw, 160px);
   opacity: 0;
-  transform: rotate(-18deg);
+  filter: drop-shadow(0 0 18px rgba(255, 47, 47, 0.38));
+  transform: rotate(-9deg);
   animation: slash 900ms ease-out infinite;
+  z-index: 5;
 }
 
 .slash-b {
-  bottom: 128px;
+  bottom: 126px;
   animation-delay: 220ms;
 }
 
@@ -804,10 +758,46 @@ kbd {
 
   .hero-sprite {
     left: 9%;
+    bottom: 190px;
+    width: 132px;
+    height: 160px;
   }
 
   .enemy-sprite {
     right: 7%;
+    bottom: 190px;
+    width: 124px;
+    height: 152px;
+  }
+
+  .enemy-boss .enemy-sprite {
+    right: 2%;
+    bottom: 170px;
+    width: 168px;
+    height: 196px;
+  }
+
+  .slash {
+    right: 32%;
+    bottom: 252px;
+    width: 132px;
+    height: 90px;
+  }
+
+  .slash-b {
+    bottom: 226px;
+  }
+
+  .loot-beam {
+    right: 22%;
+    bottom: 168px;
+    width: 64px;
+    height: 150px;
+  }
+
+  .floating-text {
+    right: calc(35% + var(--float-index) * 12px);
+    bottom: calc(286px + var(--float-index) * 14px);
   }
 
   .loot-list,
