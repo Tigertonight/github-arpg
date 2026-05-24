@@ -491,20 +491,13 @@ button {
   left: 66%;
 }
 
-.enemy-sprite img {
-  filter:
-    drop-shadow(0 20px 18px rgba(0, 0, 0, 0.68))
-    drop-shadow(0 0 12px rgba(240, 116, 62, 0.12));
-  animation: enemyFrame 780ms steps(4, end) infinite;
-  transform-origin: 50% 100%;
-}
-
-.enemy-walk-sheet {
+.enemy-frame-viewport {
   position: absolute;
   left: 0;
   bottom: 0;
   width: clamp(150px, 18vw, 250px);
   height: clamp(170px, 21vw, 300px);
+  overflow: hidden;
   filter:
     drop-shadow(0 20px 18px rgba(0, 0, 0, 0.68))
     drop-shadow(0 0 12px rgba(240, 116, 62, 0.12));
@@ -512,11 +505,30 @@ button {
   transform-origin: 50% 100%;
 }
 
+.enemy-frame-viewport .enemy-walk-sheet {
+  display: block;
+  width: 400%;
+  height: 100%;
+  object-fit: fill;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  animation: enemySheetStep 780ms step-end infinite;
+}
+
 .enemy-sheet-beast {
   animation-duration: 560ms;
 }
 
+.enemy-sheet-beast .enemy-walk-sheet {
+  animation-duration: 560ms;
+}
+
 .enemy-sheet-brute {
+  animation-duration: 920ms;
+}
+
+.enemy-sheet-brute .enemy-walk-sheet {
   animation-duration: 920ms;
 }
 
@@ -539,7 +551,7 @@ button {
   bottom: 62px;
 }
 
-.enemy-boss .enemy-walk-sheet {
+.enemy-boss .enemy-frame-viewport {
   width: clamp(230px, 28vw, 400px);
   height: clamp(250px, 31vw, 440px);
 }
@@ -1051,6 +1063,25 @@ kbd {
   }
 }
 
+@keyframes enemySheetStep {
+  0%,
+  24.99% {
+    transform: translateX(0);
+  }
+  25%,
+  49.99% {
+    transform: translateX(-25%);
+  }
+  50%,
+  74.99% {
+    transform: translateX(-50%);
+  }
+  75%,
+  100% {
+    transform: translateX(-75%);
+  }
+}
+
 @keyframes enemyHit {
   0%,
   100% {
@@ -1086,22 +1117,6 @@ kbd {
   100% {
     transform: translateX(0);
     opacity: 1;
-  }
-}
-
-@keyframes enemyFrame {
-  0%,
-  100% {
-    transform: rotate(0deg) scaleY(1);
-  }
-  25% {
-    transform: rotate(-1deg) scaleY(0.99);
-  }
-  50% {
-    transform: rotate(1deg) scaleY(1.015);
-  }
-  75% {
-    transform: rotate(-0.6deg) scaleY(0.985);
   }
 }
 
@@ -1294,7 +1309,7 @@ kbd {
     height: 0;
   }
 
-  .enemy-walk-sheet {
+  .enemy-frame-viewport {
     width: 124px;
     height: 152px;
   }
@@ -1304,7 +1319,7 @@ kbd {
     bottom: 170px;
   }
 
-  .enemy-boss .enemy-walk-sheet {
+  .enemy-boss .enemy-frame-viewport {
     width: 168px;
     height: 196px;
   }

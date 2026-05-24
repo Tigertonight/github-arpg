@@ -94,11 +94,9 @@ export function StageView({ game }: { game: GameState }) {
           </>
         ) : null}
         <div className="enemy-sprite">
-          <div
-            className={`sprite-sheet enemy-walk-sheet ${enemySheetClass}`}
-            style={{ backgroundImage: `url(${enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner})` }}
-            aria-hidden="true"
-          />
+          <div className={`enemy-frame-viewport ${enemySheetClass}`} aria-hidden="true">
+            <img className="enemy-walk-sheet" src={enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner} alt="" />
+          </div>
           {game.enemy.rank !== 'normal' && !isTraveling ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
         </div>
         {game.lastDrop ? <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" /> : null}
