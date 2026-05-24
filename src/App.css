@@ -10,7 +10,7 @@
 .game-grid,
 .stage-panel,
 .stats-panel,
-.loot-panel,
+.loot-wrap,
 .side-stack > section {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -226,8 +226,11 @@ button {
   position: absolute;
   right: -32px;
   bottom: 46px;
-  color: #d9eef2;
-  filter: drop-shadow(0 0 12px rgba(126, 217, 255, 0.7));
+  width: 58px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d9eef2, #6e8790);
+  box-shadow: 0 0 12px rgba(126, 217, 255, 0.7);
   transform: rotate(58deg);
 }
 
@@ -256,6 +259,63 @@ button {
   border-radius: 999px;
   background: var(--ember);
   box-shadow: 0 0 16px rgba(255, 120, 68, 0.9);
+}
+
+.enemy-crown {
+  position: absolute;
+  top: -12px;
+  right: 12px;
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 138, 61, 0.72);
+  border-radius: 4px;
+  background: rgba(8, 10, 12, 0.84);
+  color: #ffd18a;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.enemy-boss .enemy-core {
+  border-color: rgba(255, 57, 57, 0.55);
+  box-shadow:
+    inset 0 -18px 0 rgba(0, 0, 0, 0.22),
+    0 0 34px rgba(180, 28, 28, 0.45);
+}
+
+.loot-beam {
+  position: absolute;
+  right: 28%;
+  bottom: 84px;
+  width: 32px;
+  height: 190px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 202, 89, 0), rgba(255, 202, 89, 0.78), rgba(255, 202, 89, 0));
+  filter: blur(1px);
+  opacity: 0.72;
+  animation: beamPulse 900ms ease-out infinite;
+}
+
+.floating-text {
+  position: absolute;
+  right: calc(31% + var(--float-index) * 24px);
+  bottom: calc(210px + var(--float-index) * 18px);
+  color: #f7f1dc;
+  font-weight: 900;
+  text-shadow: 0 2px 8px #000;
+  animation: floatUp 900ms ease-out both;
+}
+
+.floating-text.bleed {
+  color: #ff5a54;
+}
+
+.floating-text.execute {
+  color: #ffd18a;
+  font-size: 1.35rem;
+}
+
+.floating-text.loot {
+  color: #f2c94c;
 }
 
 .slash {
@@ -290,6 +350,28 @@ button {
   border-radius: 8px;
   background: rgba(8, 10, 12, 0.72);
   backdrop-filter: blur(12px);
+}
+
+.bleed-meter {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 82px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.bleed-meter div {
+  overflow: hidden;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bleed-meter b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8f1d1d, #ff5a54);
 }
 
 .stage-hud span,
@@ -405,16 +487,19 @@ kbd {
   font: 0.76rem/1.2 var(--font-mono);
 }
 
-.loot-panel {
+.loot-wrap {
   grid-column: 1 / 2;
+}
+
+.loot-panel {
+  margin-top: 12px;
 }
 
 .loot-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  max-height: 392px;
-  margin-top: 12px;
+  max-height: 470px;
   overflow: auto;
   padding-right: 4px;
 }
@@ -423,7 +508,7 @@ kbd {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 52px;
   gap: 10px;
-  min-height: 132px;
+  min-height: 184px;
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--rarity) 60%, transparent);
   border-radius: 6px;
@@ -457,6 +542,44 @@ kbd {
   gap: 8px;
 }
 
+.affix-list {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 3px;
+}
+
+.affix-list small {
+  color: #d8c8b2;
+  font-size: 0.74rem;
+}
+
+.tag-row {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 20px;
+}
+
+.tag-row b {
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 90, 84, 0.34);
+  border-radius: 999px;
+  color: #ffb0a7;
+  font-size: 0.68rem;
+}
+
+.claim-button {
+  width: 100%;
+  min-height: 36px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(242, 201, 76, 0.5);
+  border-radius: 6px;
+  background: rgba(242, 201, 76, 0.11);
+  color: #f2c94c;
+  cursor: pointer;
+}
+
 .loot-actions button {
   flex: 1;
   min-height: 32px;
@@ -473,10 +596,53 @@ kbd {
 }
 
 .equipment-slots,
-.log-panel ol {
+.log-panel ol,
+.skill-list,
+.filter-list {
   display: grid;
   gap: 9px;
   margin-top: 12px;
+}
+
+.skill-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-soft);
+}
+
+.skill-card strong {
+  display: block;
+  color: var(--text-strong);
+}
+
+.skill-card span,
+.skill-card p {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.skill-card p {
+  grid-column: 1 / -1;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-soft);
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.filter-row input {
+  accent-color: var(--ember);
 }
 
 .equipment-slot strong {
@@ -568,13 +734,41 @@ kbd {
   }
 }
 
+@keyframes floatUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-34px) scale(1.04);
+  }
+}
+
+@keyframes beamPulse {
+  from {
+    opacity: 0.2;
+    transform: scaleY(0.8);
+  }
+  50% {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0.2;
+    transform: scaleY(1.05);
+  }
+}
+
 @media (max-width: 1100px) {
   .game-grid {
     grid-template-columns: 1fr;
   }
 
   .side-stack,
-  .loot-panel {
+  .loot-wrap {
     grid-column: auto;
     grid-row: auto;
   }
