@@ -200,9 +200,13 @@ export interface CombatLogEntry {
   text: string
 }
 
+export type StageMode = 'travel' | 'combat'
+
 export interface GameState {
   version: number
   running: boolean
+  stageMode: StageMode
+  stageModeUntil: number
   hero: Hero
   resources: ResourceState
   inventory: InventoryState

@@ -131,7 +131,12 @@ button {
     linear-gradient(180deg, rgba(10, 12, 14, 0.08), rgba(7, 7, 8, 0.34)),
     url('/assets/game/black-forge-stage-bg.webp') 0 50% / 50% 100% repeat-x;
   animation: stageMarch 30s linear infinite;
+  animation-play-state: paused;
   will-change: transform;
+}
+
+.stage-travel::before {
+  animation-play-state: running;
 }
 
 .stage-panel::after {
@@ -312,6 +317,11 @@ button {
     linear-gradient(180deg, transparent 0%, rgba(5, 5, 5, 0.26) 48%, rgba(3, 3, 3, 0.5) 100%);
   background-size: auto;
   animation: laneMove 1.8s linear infinite;
+  animation-play-state: paused;
+}
+
+.stage-travel .lane {
+  animation-play-state: running;
 }
 
 .lane::before,
@@ -330,6 +340,11 @@ button {
     repeating-linear-gradient(90deg, transparent 0 68px, rgba(236, 171, 91, 0.32) 68px 74px, transparent 74px 144px);
   opacity: 0.26;
   animation: trackSleepers 1.45s linear infinite;
+  animation-play-state: paused;
+}
+
+.stage-travel .lane::before {
+  animation-play-state: running;
 }
 
 .lane::after {
@@ -352,6 +367,15 @@ button {
   opacity: 0.55;
   z-index: 1;
   animation: dustTrail 2.6s linear infinite;
+  animation-play-state: paused;
+}
+
+.stage-travel .road-dust {
+  animation-play-state: running;
+}
+
+.stage-combat .road-dust {
+  opacity: 0;
 }
 
 .road-dust-a {
@@ -378,13 +402,28 @@ button {
 
 .hero-sprite {
   position: absolute;
-  left: 14%;
+  left: 18%;
   bottom: 78px;
   width: clamp(178px, 21vw, 280px);
   height: clamp(210px, 25vw, 340px);
-  animation: heroStride 720ms steps(4, end) infinite;
+  animation: heroCombatIdle 1.8s ease-in-out infinite;
   z-index: 4;
   transform-origin: 50% 100%;
+  transition:
+    left 380ms ease,
+    opacity 180ms ease;
+}
+
+.stage-travel .hero-sprite {
+  left: 7%;
+  animation:
+    heroTravel 1.8s linear infinite,
+    heroStride 720ms steps(4, end) infinite;
+}
+
+.stage-combat .hero-sprite {
+  left: 18%;
+  animation: heroCombatIdle 1.8s ease-in-out infinite;
 }
 
 .hero-sprite img,
@@ -423,6 +462,11 @@ button {
     drop-shadow(0 22px 18px rgba(0, 0, 0, 0.62))
     drop-shadow(0 0 16px rgba(177, 39, 27, 0.16));
   transform-origin: 50% 100%;
+  animation: heroBodyReady 1.8s ease-in-out infinite;
+}
+
+.stage-travel .hero-sprite img {
+  animation: heroBodyWalk 720ms steps(4, end) infinite;
 }
 
 .enemy-sprite {
@@ -458,68 +502,6 @@ button {
 
 .enemy-sheet-brute {
   animation-duration: 920ms;
-}
-
-.enemy-pack {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.pack-enemy {
-  position: absolute;
-  width: clamp(84px, 10vw, 142px);
-  height: clamp(96px, 12vw, 164px);
-  opacity: 0.72;
-  background-position: 0 50%;
-  background-repeat: no-repeat;
-  background-size: 400% 100%;
-  filter:
-    brightness(0.86)
-    saturate(0.92)
-    drop-shadow(0 16px 14px rgba(0, 0, 0, 0.62));
-  transform-origin: 50% 100%;
-  animation:
-    walkSheet 760ms steps(4) infinite,
-    packWalk 820ms steps(4, end) infinite,
-    packAdvance 5.8s linear infinite;
-  animation-delay: calc(var(--pack-index) * -0.9s);
-}
-
-.pack-beast {
-  animation-duration: 540ms, 640ms, 5.4s;
-}
-
-.pack-brute {
-  animation-duration: 980ms, 980ms, 6.4s;
-}
-
-.pack-enemy-1 {
-  right: 2%;
-  bottom: 70px;
-}
-
-.pack-enemy-2 {
-  right: 14%;
-  bottom: 116px;
-  width: clamp(72px, 8vw, 116px);
-  height: clamp(84px, 10vw, 140px);
-  opacity: 0.58;
-}
-
-.pack-enemy-3 {
-  right: 34%;
-  bottom: 88px;
-  opacity: 0.46;
-}
-
-.pack-enemy-4 {
-  right: 50%;
-  bottom: 128px;
-  width: clamp(70px, 8vw, 112px);
-  height: clamp(82px, 10vw, 138px);
-  opacity: 0.36;
 }
 
 .enemy-crown {
@@ -965,16 +947,61 @@ kbd {
 @keyframes heroStride {
   0%,
   100% {
-    transform: translateY(0) scaleY(1);
+    translate: 0 0;
   }
   25% {
-    transform: translateY(-3px) scaleY(0.992);
+    translate: 0 -3px;
   }
   50% {
-    transform: translateY(1px) scaleY(1.008);
+    translate: 0 1px;
   }
   75% {
-    transform: translateY(-2px) scaleY(0.996);
+    translate: 0 -2px;
+  }
+}
+
+@keyframes heroTravel {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(26vw);
+  }
+}
+
+@keyframes heroCombatIdle {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(5px) translateY(-2px);
+  }
+}
+
+@keyframes heroBodyReady {
+  0%,
+  100% {
+    transform: rotate(-0.4deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(0.7deg) scaleY(1.006);
+  }
+}
+
+@keyframes heroBodyWalk {
+  0%,
+  100% {
+    transform: rotate(-0.8deg) skewX(0deg) scaleY(1);
+  }
+  25% {
+    transform: rotate(1deg) skewX(-0.8deg) scaleY(0.99);
+  }
+  50% {
+    transform: rotate(0deg) skewX(0.6deg) scaleY(1.012);
+  }
+  75% {
+    transform: rotate(-1deg) skewX(0.8deg) scaleY(0.992);
   }
 }
 
@@ -1036,35 +1063,6 @@ kbd {
   }
   75% {
     transform: rotate(-0.6deg) scaleY(0.985);
-  }
-}
-
-@keyframes packWalk {
-  0%,
-  100% {
-    translate: 0 0;
-    scale: 1 1;
-  }
-  25% {
-    translate: -2px -2px;
-    scale: 1.01 0.99;
-  }
-  50% {
-    translate: -5px 1px;
-    scale: 0.99 1.01;
-  }
-  75% {
-    translate: -2px -2px;
-    scale: 1.01 0.99;
-  }
-}
-
-@keyframes packAdvance {
-  from {
-    transform: translateX(96px);
-  }
-  to {
-    transform: translateX(-260px);
   }
 }
 
@@ -1235,10 +1233,14 @@ kbd {
   }
 
   .hero-sprite {
-    left: 9%;
+    left: 16%;
     bottom: 190px;
     width: 132px;
     height: 160px;
+  }
+
+  .stage-travel .hero-sprite {
+    left: 5%;
   }
 
   .enemy-sprite {
@@ -1246,35 +1248,6 @@ kbd {
     bottom: 190px;
     width: 124px;
     height: 152px;
-  }
-
-  .pack-enemy {
-    width: 76px;
-    height: 92px;
-  }
-
-  .pack-enemy-1 {
-    right: -22%;
-    bottom: 198px;
-  }
-
-  .pack-enemy-2 {
-    right: -2%;
-    bottom: 222px;
-    width: 62px;
-    height: 78px;
-  }
-
-  .pack-enemy-3 {
-    right: 34%;
-    bottom: 204px;
-  }
-
-  .pack-enemy-4 {
-    right: 48%;
-    bottom: 232px;
-    width: 58px;
-    height: 74px;
   }
 
   .enemy-boss .enemy-sprite {

@@ -9,18 +9,37 @@ import { createEnemyForStage } from './progression'
 import { randomRng } from './rng'
 
 const TICK_MS = 900
+const TRAVEL_MS = 1800
 
 export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState {
   const stats = deriveCombatStats(current.hero.equipment, current.itemsById, current.hero.level)
   const enemy = { ...current.enemy, bleed: { ...current.enemy.bleed } }
-  let hero = {
-    ...current.hero,
-    skills: current.hero.skills.map((skill) => ({
-      ...skill,
-      cooldownRemainingMs: Math.max(0, skill.cooldownRemainingMs - deltaMs),
-    })),
-  }
+  let hero = coolDownSkills(current, deltaMs)
   const floatingTexts = current.floatingTexts.slice(0, 3)
+  const now = Date.now()
+
+  if (current.stageMode === 'travel') {
+    if (current.stageModeUntil > now) {
+      return {
+        ...current,
+        hero,
+        floatingTexts,
+        lastDrop: undefined,
+        lastSavedAt: now,
+      }
+    }
+
+    return {
+      ...current,
+      hero,
+      stageMode: 'combat',
+      stageModeUntil: 0,
+      combatLog: addLog(current.combatLog, `遭遇 ${current.enemy.name}，矿道行军停止。`),
+      floatingTexts,
+      lastDrop: undefined,
+      lastSavedAt: now,
+    }
+  }
 
   const bleedDamage = bleedTickDamage(stats, enemy, deltaMs)
   if (bleedDamage > 0) {
@@ -58,13 +77,25 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
       ...current,
       hero,
       enemy,
+      stageMode: 'combat',
+      stageModeUntil: 0,
       floatingTexts: floatingTexts.slice(0, 5),
       lastDrop: undefined,
-      lastSavedAt: Date.now(),
+      lastSavedAt: now,
     }
   }
 
   return resolveKill({ ...current, hero, enemy, floatingTexts: floatingTexts.slice(0, 5) }, stats.magicFind, stats.goldFind)
+}
+
+function coolDownSkills(current: GameState, deltaMs: number) {
+  return {
+    ...current.hero,
+    skills: current.hero.skills.map((skill) => ({
+      ...skill,
+      cooldownRemainingMs: Math.max(0, skill.cooldownRemainingMs - deltaMs),
+    })),
+  }
 }
 
 function chooseSkill(skills: SkillState[], enemy: GameState['enemy']) {
@@ -114,6 +145,8 @@ function resolveKill(current: GameState, magicFind: number, goldFind: number): G
     },
     itemsById,
     enemy: createEnemyForStage(current.progression.zoneId, nextStage, randomRng),
+    stageMode: 'travel',
+    stageModeUntil: Date.now() + TRAVEL_MS,
     progression: {
       ...current.progression,
       stage: nextStage,

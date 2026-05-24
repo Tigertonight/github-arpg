@@ -95,6 +95,7 @@ export function migrateLegacyState(raw: string | null): GameState | null {
 }
 
 export function createStarterState(): GameState {
+  const now = Date.now()
   const firstWeapon = createItem('black_forge', 1, 0, randomRng)
   const firstGloves = createItem('black_forge_elite', 1, 8, randomRng)
   firstWeapon.rarity = 'magic'
@@ -108,6 +109,8 @@ export function createStarterState(): GameState {
   return {
     version: 2,
     running: true,
+    stageMode: 'travel',
+    stageModeUntil: now + 1800,
     hero: {
       id: 'hero_oathbreaker',
       name: '破誓骑士',
@@ -149,7 +152,7 @@ export function createStarterState(): GameState {
     },
     combatLog: [{ id: 'starter_log', text: '破誓骑士踏入黑炉矿道，流血构筑已装配。' }],
     floatingTexts: [],
-    lastSavedAt: Date.now(),
+    lastSavedAt: now,
   }
 }
 

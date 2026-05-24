@@ -13,16 +13,6 @@ const enemyWalkSheets: Record<string, string> = {
   vein_butcher: `${gameAssetBase}/enemy-brute-walk-sheet.png`,
 }
 
-const packEnemyIds = ['bone_miner', 'rust_hound', 'coal_cultist', 'black_forge_guard']
-
-function getPackEnemyIds(currentEnemyId: string, stage: number, rank: string) {
-  if (rank === 'boss') return ['rust_hound', 'bone_miner', 'coal_cultist']
-
-  const pool = packEnemyIds.filter((id) => id !== currentEnemyId)
-  const size = rank === 'elite' ? 4 : 3
-  return Array.from({ length: size }, (_, index) => pool[(stage + index) % pool.length])
-}
-
 export function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="panel-title">
@@ -42,12 +32,12 @@ export function Stat({ label, value }: { label: string; value: string | number }
 }
 
 export function StageView({ game }: { game: GameState }) {
+  const isTraveling = game.stageMode === 'travel'
   const hpPercent = Math.max(0, Math.round((game.enemy.currentLife / game.enemy.maxLife) * 100))
   const bleedPercent = Math.min(100, game.enemy.bleed.stacks * 11)
-  const packEnemies = getPackEnemyIds(game.enemy.enemyDefId, game.progression.stage, game.enemy.rank)
   const heroLifePercent = Math.max(0, Math.round((game.hero.currentLife / 120) * 100))
   return (
-    <div className={`stage-panel enemy-${game.enemy.rank}`}>
+    <div className={`stage-panel stage-${game.stageMode} enemy-${game.enemy.rank}`}>
       <div className="combat-hud">
         <div className="hero-hud">
           <div className="hero-hud-portrait" />
@@ -60,7 +50,7 @@ export function StageView({ game }: { game: GameState }) {
           </div>
         </div>
         <div className="stage-objective">
-          <span>任务推进</span>
+          <span>{isTraveling ? '赶往下一场遭遇' : '遭遇战'}</span>
           <strong>黑炉矿道 第 {game.progression.stage} 层</strong>
         </div>
         <div className="skill-wheel" aria-label="自动技能轮盘">
@@ -89,32 +79,24 @@ export function StageView({ game }: { game: GameState }) {
         <div className="road-dust road-dust-a" />
         <div className="road-dust road-dust-b" />
         <div className="hero-sprite" aria-label="破誓骑士">
-          <div className="sprite-sheet hero-walk-sheet" />
+          <img src={`${gameAssetBase}/oathbreaker-hero.png`} alt="" />
         </div>
-        <img className="slash slash-a" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
-        <img className="slash slash-b" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
-        <div className="enemy-pack" aria-hidden="true">
-          {packEnemies.map((enemyId, index) => (
+        {!isTraveling ? (
+          <>
+            <img className="slash slash-a" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
+            <img className="slash slash-b" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
+          </>
+        ) : null}
+        {!isTraveling ? (
+          <div className="enemy-sprite">
             <div
-              className={`pack-enemy pack-enemy-${index + 1} ${enemyId === 'rust_hound' ? 'pack-beast' : enemyId === 'black_forge_guard' ? 'pack-brute' : 'pack-humanoid'}`}
-              style={
-                {
-                  '--pack-index': index,
-                  backgroundImage: `url(${enemyWalkSheets[enemyId] ?? enemyWalkSheets.bone_miner})`,
-                } as CSSProperties
-              }
-              key={`${enemyId}-${index}`}
+              className={`sprite-sheet enemy-walk-sheet ${game.enemy.enemyDefId === 'rust_hound' ? 'enemy-sheet-beast' : ['black_forge_guard', 'vein_butcher'].includes(game.enemy.enemyDefId) ? 'enemy-sheet-brute' : 'enemy-sheet-humanoid'}`}
+              style={{ backgroundImage: `url(${enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner})` }}
+              aria-hidden="true"
             />
-          ))}
-        </div>
-        <div className="enemy-sprite">
-          <div
-            className={`sprite-sheet enemy-walk-sheet ${game.enemy.enemyDefId === 'rust_hound' ? 'enemy-sheet-beast' : ['black_forge_guard', 'vein_butcher'].includes(game.enemy.enemyDefId) ? 'enemy-sheet-brute' : 'enemy-sheet-humanoid'}`}
-            style={{ backgroundImage: `url(${enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner})` }}
-            aria-hidden="true"
-          />
-          {game.enemy.rank !== 'normal' ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
-        </div>
+            {game.enemy.rank !== 'normal' ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
+          </div>
+        ) : null}
         {game.lastDrop ? <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" /> : null}
         {game.floatingTexts.map((text, index) => (
           <div className={`floating-text ${text.kind}`} style={{ '--float-index': index } as CSSProperties} key={text.id}>
@@ -129,12 +111,12 @@ export function StageView({ game }: { game: GameState }) {
           <span>
             {game.progression.zoneId === 'black_forge_mines' ? '黑炉矿道' : game.progression.zoneId} / 第 {game.progression.stage} 层
           </span>
-          <strong>{game.enemy.name}</strong>
+          <strong>{isTraveling ? `下一遭遇：${game.enemy.name}` : game.enemy.name}</strong>
         </div>
         <div className="healthbar" aria-label="怪物生命">
           <span style={{ width: `${hpPercent}%` }} />
         </div>
-        <span>{hpPercent}%</span>
+        <span>{isTraveling ? '行进中' : `${hpPercent}%`}</span>
         <div className="bleed-meter">
           <span>流血 {game.enemy.bleed.stacks} 层</span>
           <div>
