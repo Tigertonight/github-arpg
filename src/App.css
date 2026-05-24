@@ -445,7 +445,7 @@ button {
   background-size: 400% 100%;
   pointer-events: none;
   user-select: none;
-  animation: walkSheet 680ms steps(4) infinite;
+  animation: walkSheet 680ms step-end infinite;
 }
 
 .hero-walk-sheet {
@@ -1033,10 +1033,20 @@ kbd {
 }
 
 @keyframes walkSheet {
-  from {
+  0%,
+  24.99% {
     background-position: 0 50%;
   }
-  to {
+  25%,
+  49.99% {
+    background-position: 33.333% 50%;
+  }
+  50%,
+  74.99% {
+    background-position: 66.667% 50%;
+  }
+  75%,
+  100% {
     background-position: 100% 50%;
   }
 }
