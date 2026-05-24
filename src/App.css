@@ -404,11 +404,11 @@ button {
   position: absolute;
   left: 18%;
   bottom: 78px;
-  width: clamp(178px, 21vw, 280px);
-  height: clamp(210px, 25vw, 340px);
-  animation: heroCombatIdle 1.8s ease-in-out infinite;
+  width: 0;
+  height: 0;
+  animation: heroPointIdle 1.8s ease-in-out infinite;
   z-index: 4;
-  transform-origin: 50% 100%;
+  transform-origin: 0 0;
   transition:
     left 380ms ease,
     opacity 180ms ease;
@@ -416,14 +416,12 @@ button {
 
 .stage-travel .hero-sprite {
   left: 18%;
-  animation:
-    heroRunAnchor 640ms steps(4, end) infinite,
-    heroStride 720ms steps(4, end) infinite;
+  animation: heroPointRun 640ms steps(4, end) infinite;
 }
 
 .stage-combat .hero-sprite {
   left: 18%;
-  animation: heroCombatIdle 1.8s ease-in-out infinite;
+  animation: heroPointIdle 1.8s ease-in-out infinite;
 }
 
 .hero-sprite img,
@@ -458,6 +456,11 @@ button {
 }
 
 .hero-sprite img {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: clamp(178px, 21vw, 280px);
+  height: clamp(210px, 25vw, 340px);
   filter:
     drop-shadow(0 22px 18px rgba(0, 0, 0, 0.62))
     drop-shadow(0 0 16px rgba(177, 39, 27, 0.16));
@@ -471,28 +474,21 @@ button {
 
 .enemy-sprite {
   position: absolute;
-  right: 15%;
+  left: 68%;
   bottom: 82px;
-  width: clamp(150px, 18vw, 250px);
-  height: clamp(170px, 21vw, 300px);
-  animation:
-    enemyWalk 780ms steps(4, end) infinite,
-    enemyPress 3.1s ease-in-out infinite;
+  width: 0;
+  height: 0;
+  animation: enemyPointPress 3.1s ease-in-out infinite;
   z-index: 3;
-  transform-origin: 50% 100%;
+  transform-origin: 0 0;
 }
 
 .stage-travel .enemy-sprite {
-  right: auto;
-  left: 112%;
-  animation:
-    enemyApproach 1.8s linear forwards,
-    enemyWalk 780ms steps(4, end) infinite;
+  animation: enemyPointApproach 1.8s cubic-bezier(0.22, 0.74, 0.28, 1) forwards;
 }
 
 .stage-travel.enemy-boss .enemy-sprite {
-  right: auto;
-  left: 112%;
+  left: 66%;
 }
 
 .enemy-sprite img {
@@ -504,9 +500,16 @@ button {
 }
 
 .enemy-walk-sheet {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: clamp(150px, 18vw, 250px);
+  height: clamp(170px, 21vw, 300px);
   filter:
     drop-shadow(0 20px 18px rgba(0, 0, 0, 0.68))
     drop-shadow(0 0 12px rgba(240, 116, 62, 0.12));
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
 }
 
 .enemy-sheet-beast {
@@ -519,8 +522,8 @@ button {
 
 .enemy-crown {
   position: absolute;
-  top: 10px;
-  right: 20px;
+  right: -58px;
+  bottom: clamp(158px, 19vw, 276px);
   padding: 3px 7px;
   border: 1px solid rgba(255, 138, 61, 0.72);
   border-radius: 4px;
@@ -532,10 +535,18 @@ button {
 }
 
 .enemy-boss .enemy-sprite {
-  right: 10%;
+  left: 66%;
   bottom: 62px;
+}
+
+.enemy-boss .enemy-walk-sheet {
   width: clamp(230px, 28vw, 400px);
   height: clamp(250px, 31vw, 440px);
+}
+
+.enemy-boss .enemy-crown {
+  right: -72px;
+  bottom: clamp(238px, 29vw, 410px);
 }
 
 .loot-beam {
@@ -973,51 +984,51 @@ kbd {
   }
 }
 
-@keyframes heroRunAnchor {
+@keyframes heroPointRun {
   0% {
-    transform: translateX(0) rotate(-0.4deg);
-  }
-  50% {
-    transform: translateX(2px) rotate(0.6deg);
-  }
-  100% {
-    transform: translateX(0) rotate(-0.4deg);
-  }
-}
-
-@keyframes heroCombatIdle {
-  0%,
-  100% {
     transform: translateX(0) translateY(0);
   }
   50% {
-    transform: translateX(5px) translateY(-2px);
+    transform: translateX(0) translateY(-3px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes heroPointIdle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
   }
 }
 
 @keyframes heroBodyReady {
   0%,
   100% {
-    transform: rotate(-0.4deg) scaleY(1);
+    transform: translateX(-50%) rotate(-0.4deg) scaleY(1);
   }
   50% {
-    transform: rotate(0.7deg) scaleY(1.006);
+    transform: translateX(-50%) rotate(0.7deg) scaleY(1.006);
   }
 }
 
 @keyframes heroBodyWalk {
   0%,
   100% {
-    transform: rotate(-0.8deg) skewX(0deg) scaleY(1);
+    transform: translateX(-50%) rotate(-0.8deg) skewX(0deg) scaleY(1);
   }
   25% {
-    transform: rotate(1deg) skewX(-0.8deg) scaleY(0.99);
+    transform: translateX(-50%) rotate(1deg) skewX(-0.8deg) scaleY(0.99);
   }
   50% {
-    transform: rotate(0deg) skewX(0.6deg) scaleY(1.012);
+    transform: translateX(-50%) rotate(0deg) skewX(0.6deg) scaleY(1.012);
   }
   75% {
-    transform: rotate(-1deg) skewX(0.8deg) scaleY(0.992);
+    transform: translateX(-50%) rotate(-1deg) skewX(0.8deg) scaleY(0.992);
   }
 }
 
@@ -1040,23 +1051,7 @@ kbd {
   }
 }
 
-@keyframes enemyWalk {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  25% {
-    translate: -2px -2px;
-  }
-  50% {
-    translate: -5px 1px;
-  }
-  75% {
-    translate: -2px -3px;
-  }
-}
-
-@keyframes enemyPress {
+@keyframes enemyPointPress {
   0%,
   100% {
     transform: translateX(0);
@@ -1066,16 +1061,20 @@ kbd {
   }
 }
 
-@keyframes enemyApproach {
+@keyframes enemyPointApproach {
   0% {
-    left: 112%;
-    opacity: 0.2;
+    transform: translateX(46vw);
+    opacity: 0;
   }
-  18% {
+  22% {
+    transform: translateX(28vw);
+    opacity: 0;
+  }
+  32% {
     opacity: 1;
   }
   100% {
-    left: 62%;
+    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -1265,6 +1264,11 @@ kbd {
   .hero-sprite {
     left: 16%;
     bottom: 190px;
+    width: 0;
+    height: 0;
+  }
+
+  .hero-sprite img {
     width: 132px;
     height: 160px;
   }
@@ -1274,17 +1278,35 @@ kbd {
   }
 
   .enemy-sprite {
-    right: 7%;
+    left: 72%;
     bottom: 190px;
+    width: 0;
+    height: 0;
+  }
+
+  .enemy-walk-sheet {
     width: 124px;
     height: 152px;
   }
 
   .enemy-boss .enemy-sprite {
-    right: 2%;
+    left: 74%;
     bottom: 170px;
+  }
+
+  .enemy-boss .enemy-walk-sheet {
     width: 168px;
     height: 196px;
+  }
+
+  .enemy-crown {
+    right: -44px;
+    bottom: 144px;
+  }
+
+  .enemy-boss .enemy-crown {
+    right: -56px;
+    bottom: 188px;
   }
 
   .slash {
