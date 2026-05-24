@@ -1,0 +1,51 @@
+:root {
+  --bg: #0a0c0d;
+  --panel: #111518;
+  --panel-soft: #171d20;
+  --line: #283137;
+  --text: #d7d0c4;
+  --text-strong: #fff4df;
+  --muted: #8f9a9e;
+  --ember: #f0743e;
+  --gold: #f2c94c;
+  --teal: #51b4a6;
+  --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+  --font-sans:
+    "Gill Sans", "Avenir Next", "Segoe UI", "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, #0d1113 0%, #070808 100%);
+  background-size: 46px 46px, auto;
+  font: 16px/1.45 var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100svh;
+  margin: 0;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(240, 116, 62, 0.34);
+}

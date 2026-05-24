@@ -1,0 +1,628 @@
+.app-shell {
+  width: min(1480px, 100%);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.topbar,
+.footer-strip,
+.game-grid,
+.stage-panel,
+.stats-panel,
+.loot-panel,
+.side-stack > section {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  min-height: 86px;
+  padding: 18px 20px;
+  border-radius: 8px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: var(--text-strong);
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+.topbar-actions,
+.loot-actions,
+.panel-title,
+.footer-strip {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-actions {
+  gap: 10px;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+.icon-button,
+.primary-skill,
+.loot-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--ember) 45%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ember) 18%, var(--panel));
+  color: var(--text-strong);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.icon-button {
+  padding: 0 14px;
+}
+
+.icon-button:hover,
+.primary-skill:hover,
+.loot-actions button:hover {
+  transform: translateY(-1px);
+  border-color: var(--ember);
+}
+
+.icon-button.subtle {
+  border-color: var(--line);
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) 320px;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 74%, #080a0c);
+}
+
+.stage-panel {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 139, 61, 0.16), transparent 25%),
+    linear-gradient(180deg, #162330 0%, #12171b 48%, #090b0c 100%);
+}
+
+.lane-sky {
+  position: absolute;
+  inset: 0 0 30%;
+  overflow: hidden;
+}
+
+.moon {
+  position: absolute;
+  top: 42px;
+  right: 11%;
+  width: 84px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f4d694;
+  box-shadow: 0 0 40px rgba(244, 214, 148, 0.22);
+}
+
+.cloud {
+  position: absolute;
+  width: 280px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(208, 221, 224, 0.08);
+  animation: drift 18s linear infinite;
+}
+
+.cloud-a {
+  top: 82px;
+  left: 8%;
+}
+
+.cloud-b {
+  top: 150px;
+  left: 38%;
+  animation-duration: 24s;
+}
+
+.lane {
+  position: absolute;
+  inset: auto 0 0;
+  height: 58%;
+  background:
+    linear-gradient(90deg, transparent 0 10%, rgba(255, 255, 255, 0.07) 10% 10.4%, transparent 10.4% 20%),
+    linear-gradient(180deg, rgba(53, 68, 74, 0.24), transparent 34%),
+    #15110f;
+  background-size: 180px 100%, auto, auto;
+  animation: laneMove 2.8s linear infinite;
+}
+
+.rail {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(199, 164, 116, 0.35);
+}
+
+.rail-a {
+  bottom: 110px;
+}
+
+.rail-b {
+  bottom: 78px;
+}
+
+.hero-sprite {
+  position: absolute;
+  left: 17%;
+  bottom: 90px;
+  width: 92px;
+  height: 132px;
+  animation: idle 900ms ease-in-out infinite alternate;
+}
+
+.hero-body,
+.hero-cape,
+.enemy-core {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+}
+
+.hero-body {
+  right: 6px;
+  bottom: 6px;
+  width: 52px;
+  height: 86px;
+  border-radius: 26px 26px 12px 12px;
+  background: linear-gradient(160deg, #f5c06f, #7b3f24 58%, #16110e);
+}
+
+.hero-cape {
+  left: 4px;
+  bottom: 0;
+  width: 58px;
+  height: 104px;
+  border-radius: 36px 12px 24px 16px;
+  background: linear-gradient(180deg, #7f1d1d, #231012);
+  transform: skewX(-10deg);
+}
+
+.hero-blade {
+  position: absolute;
+  right: -32px;
+  bottom: 46px;
+  color: #d9eef2;
+  filter: drop-shadow(0 0 12px rgba(126, 217, 255, 0.7));
+  transform: rotate(58deg);
+}
+
+.enemy-sprite {
+  position: absolute;
+  right: 20%;
+  bottom: 86px;
+  width: 116px;
+  height: 118px;
+  animation: enemyHit 900ms ease-in-out infinite;
+}
+
+.enemy-core {
+  inset: 12px 8px 0;
+  border-radius: 48% 52% 36% 36%;
+  background: linear-gradient(150deg, #1f3136, #0b1113 58%);
+  box-shadow: inset 0 -18px 0 rgba(0, 0, 0, 0.22);
+}
+
+.enemy-eye {
+  position: absolute;
+  top: 42px;
+  right: 34px;
+  width: 16px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ember);
+  box-shadow: 0 0 16px rgba(255, 120, 68, 0.9);
+}
+
+.slash {
+  position: absolute;
+  right: 36%;
+  bottom: 154px;
+  width: 128px;
+  height: 4px;
+  border-radius: 999px;
+  background: #ecf8ff;
+  opacity: 0;
+  transform: rotate(-18deg);
+  animation: slash 900ms ease-out infinite;
+}
+
+.slash-b {
+  bottom: 128px;
+  animation-delay: 220ms;
+}
+
+.stage-hud {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: max-content minmax(140px, 1fr) 44px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 10, 12, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.stage-hud span,
+.stat span,
+.equipment-slot span,
+.loot-card span,
+.loot-card p,
+.equipment-slot small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.stage-hud strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 1.2rem;
+}
+
+.healthbar,
+.xpbar {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.healthbar span,
+.xpbar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c73c3c, #f0b65f);
+  transition: width 240ms ease;
+}
+
+.stats-panel,
+.loot-panel,
+.side-stack > section {
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-title {
+  gap: 8px;
+  color: var(--ember);
+}
+
+.panel-title h2 {
+  color: var(--text-strong);
+  font-size: 1rem;
+}
+
+.stat-list,
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat,
+.equipment-slot {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-soft);
+}
+
+.stat strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-strong);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.xp-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.xpbar span {
+  background: linear-gradient(90deg, #51b4a6, #f2c94c);
+}
+
+.primary-skill {
+  width: 100%;
+  padding: 0 12px;
+}
+
+.primary-skill:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  transform: none;
+}
+
+kbd {
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font: 0.76rem/1.2 var(--font-mono);
+}
+
+.loot-panel {
+  grid-column: 1 / 2;
+}
+
+.loot-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 392px;
+  margin-top: 12px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.loot-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  gap: 10px;
+  min-height: 132px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--rarity) 60%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--rarity) 16%, transparent), transparent),
+    var(--panel-soft);
+}
+
+.loot-card h3 {
+  margin: 3px 0;
+  overflow-wrap: anywhere;
+  color: var(--text-strong);
+  font-size: 0.95rem;
+}
+
+.loot-numbers {
+  text-align: right;
+}
+
+.loot-numbers strong {
+  color: var(--rarity);
+  font-size: 1.24rem;
+}
+
+.loot-numbers span {
+  display: block;
+}
+
+.loot-actions {
+  grid-column: 1 / -1;
+  gap: 8px;
+}
+
+.loot-actions button {
+  flex: 1;
+  min-height: 32px;
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.84rem;
+}
+
+.side-stack {
+  display: grid;
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+  gap: 14px;
+}
+
+.equipment-slots,
+.log-panel ol {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.equipment-slot strong {
+  display: block;
+  margin: 4px 0 2px;
+  overflow-wrap: anywhere;
+  color: var(--text-strong);
+}
+
+.log-panel ol {
+  padding: 0;
+  list-style: none;
+}
+
+.log-panel li {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.footer-strip {
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.footer-strip svg {
+  flex: 0 0 auto;
+  color: var(--teal);
+}
+
+.footer-strip strong {
+  margin-left: auto;
+  color: var(--text-strong);
+}
+
+@keyframes idle {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes enemyHit {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  55% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes slash {
+  0% {
+    opacity: 0;
+    transform: translateX(-60px) rotate(-18deg) scaleX(0.4);
+  }
+  32% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(80px) rotate(-18deg) scaleX(1.2);
+  }
+}
+
+@keyframes laneMove {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: -180px 0, 0 0, 0 0;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(-16vw);
+  }
+  to {
+    transform: translateX(64vw);
+  }
+}
+
+@media (max-width: 1100px) {
+  .game-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .side-stack,
+  .loot-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .loot-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .topbar,
+  .footer-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stage-panel {
+    min-height: 460px;
+  }
+
+  .stage-hud {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-sprite {
+    left: 9%;
+  }
+
+  .enemy-sprite {
+    right: 7%;
+  }
+
+  .loot-list,
+  .stat-list,
+  .resource-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-strip strong {
+    margin-left: 0;
+  }
+}
