@@ -117,9 +117,161 @@ button {
   min-height: 520px;
   overflow: hidden;
   border-radius: 8px;
+  background: #070808;
+  isolation: isolate;
+}
+
+.stage-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 220%;
   background:
-    linear-gradient(180deg, rgba(10, 12, 14, 0.1), rgba(7, 7, 8, 0.34)),
-    url('/assets/game/black-forge-stage-bg.webp') center / cover no-repeat;
+    linear-gradient(180deg, rgba(10, 12, 14, 0.08), rgba(7, 7, 8, 0.34)),
+    url('/assets/game/black-forge-stage-bg.webp') 0 50% / 50% 100% repeat-x;
+  animation: stageMarch 30s linear infinite;
+  will-change: transform;
+}
+
+.stage-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 24% 74%, rgba(0, 0, 0, 0.28), transparent 28%),
+    radial-gradient(ellipse at 72% 74%, rgba(0, 0, 0, 0.34), transparent 24%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.34), transparent 18%, transparent 76%, rgba(0, 0, 0, 0.42));
+}
+
+.combat-hud {
+  position: absolute;
+  inset: 14px 14px auto;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) 1fr minmax(160px, 230px);
+  align-items: start;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.hero-hud,
+.stage-objective,
+.loot-toast {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(9, 11, 12, 0.84), rgba(9, 11, 12, 0.56));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(10px);
+}
+
+.hero-hud {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 10px;
+  padding: 9px;
+}
+
+.hero-hud-portrait {
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(240, 116, 62, 0.42);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 244, 223, 0.26), transparent 18%),
+    url('/assets/game/oathbreaker-hero.png') 52% 18% / 210% auto no-repeat,
+    #141719;
+}
+
+.hero-hud strong,
+.stage-objective strong,
+.loot-toast strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-strong);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-hud span,
+.stage-objective span,
+.loot-toast span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.hero-hud-bar {
+  overflow: hidden;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.hero-hud-bar b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7f1d1d, #df4b3f, #f0b65f);
+}
+
+.stage-objective {
+  justify-self: center;
+  min-width: 220px;
+  padding: 9px 14px;
+  text-align: center;
+}
+
+.skill-wheel {
+  position: absolute;
+  right: 0;
+  top: 76px;
+  display: grid;
+  grid-template-columns: repeat(2, 54px);
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.skill-orb {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(240, 116, 62, 0.56);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 48% 34%, rgba(255, 224, 160, 0.25), transparent 20%),
+    linear-gradient(180deg, rgba(94, 39, 25, 0.86), rgba(16, 13, 12, 0.92));
+  box-shadow:
+    inset 0 0 18px rgba(240, 116, 62, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.42);
+  color: var(--text-strong);
+  cursor: default;
+}
+
+.skill-orb span,
+.skill-orb small {
+  display: block;
+  line-height: 1;
+}
+
+.skill-orb span {
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.skill-orb small {
+  margin-top: 4px;
+  color: #ffd18a;
+  font-size: 0.56rem;
+}
+
+.loot-toast {
+  justify-self: end;
+  width: 100%;
+  padding: 9px 12px;
 }
 
 .lane-sky {
@@ -127,6 +279,7 @@ button {
   inset: 0 0 30%;
   overflow: hidden;
   pointer-events: none;
+  z-index: 2;
 }
 
 .moon {
@@ -151,13 +304,64 @@ button {
 .lane {
   position: absolute;
   inset: auto 0 0;
+  z-index: 2;
   height: 58%;
   background:
     radial-gradient(ellipse at 32% 68%, rgba(0, 0, 0, 0.38), transparent 24%),
     radial-gradient(ellipse at 73% 68%, rgba(0, 0, 0, 0.46), transparent 22%),
     linear-gradient(180deg, transparent 0%, rgba(5, 5, 5, 0.26) 48%, rgba(3, 3, 3, 0.5) 100%);
   background-size: auto;
-  animation: laneMove 2.8s linear infinite;
+  animation: laneMove 1.8s linear infinite;
+}
+
+.lane::before,
+.lane::after {
+  content: '';
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  pointer-events: none;
+}
+
+.lane::before {
+  bottom: 68px;
+  height: 28px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 68px, rgba(236, 171, 91, 0.32) 68px 74px, transparent 74px 144px);
+  opacity: 0.26;
+  animation: trackSleepers 1.45s linear infinite;
+}
+
+.lane::after {
+  bottom: 50px;
+  height: 82px;
+  background:
+    radial-gradient(ellipse at 20% 88%, rgba(0, 0, 0, 0.46), transparent 18%),
+    radial-gradient(ellipse at 72% 86%, rgba(0, 0, 0, 0.52), transparent 18%);
+  opacity: 0.7;
+}
+
+.road-dust {
+  position: absolute;
+  right: -18%;
+  width: 38%;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(184, 126, 72, 0.22), transparent);
+  filter: blur(6px);
+  opacity: 0.55;
+  z-index: 1;
+  animation: dustTrail 2.6s linear infinite;
+}
+
+.road-dust-a {
+  bottom: 116px;
+}
+
+.road-dust-b {
+  bottom: 74px;
+  animation-delay: 1.2s;
+  opacity: 0.32;
 }
 
 .rail {
@@ -178,8 +382,11 @@ button {
   bottom: 54px;
   width: clamp(178px, 21vw, 280px);
   height: clamp(210px, 25vw, 340px);
-  animation: idle 900ms ease-in-out infinite alternate;
+  animation:
+    heroStride 720ms steps(4, end) infinite,
+    heroAdvance 2.4s ease-in-out infinite;
   z-index: 4;
+  transform-origin: 50% 100%;
 }
 
 .hero-sprite img,
@@ -194,10 +401,31 @@ button {
   user-select: none;
 }
 
+.sprite-sheet {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-position: 0 50%;
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
+  pointer-events: none;
+  user-select: none;
+  animation: walkSheet 680ms steps(4) infinite;
+}
+
+.hero-walk-sheet {
+  background-image: url('/assets/game/oathbreaker-walk-sheet.png');
+  filter:
+    drop-shadow(0 22px 18px rgba(0, 0, 0, 0.62))
+    drop-shadow(0 0 16px rgba(177, 39, 27, 0.16));
+}
+
 .hero-sprite img {
   filter:
     drop-shadow(0 22px 18px rgba(0, 0, 0, 0.62))
     drop-shadow(0 0 16px rgba(177, 39, 27, 0.16));
+  animation: heroFrame 720ms steps(4, end) infinite;
+  transform-origin: 50% 100%;
 }
 
 .enemy-sprite {
@@ -206,14 +434,95 @@ button {
   bottom: 58px;
   width: clamp(150px, 18vw, 250px);
   height: clamp(170px, 21vw, 300px);
-  animation: enemyHit 900ms ease-in-out infinite;
+  animation:
+    enemyWalk 780ms steps(4, end) infinite,
+    enemyPress 3.1s ease-in-out infinite;
   z-index: 3;
+  transform-origin: 50% 100%;
 }
 
 .enemy-sprite img {
   filter:
     drop-shadow(0 20px 18px rgba(0, 0, 0, 0.68))
     drop-shadow(0 0 12px rgba(240, 116, 62, 0.12));
+  animation: enemyFrame 780ms steps(4, end) infinite;
+  transform-origin: 50% 100%;
+}
+
+.enemy-walk-sheet {
+  filter:
+    drop-shadow(0 20px 18px rgba(0, 0, 0, 0.68))
+    drop-shadow(0 0 12px rgba(240, 116, 62, 0.12));
+}
+
+.enemy-sheet-beast {
+  animation-duration: 560ms;
+}
+
+.enemy-sheet-brute {
+  animation-duration: 920ms;
+}
+
+.enemy-pack {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pack-enemy {
+  position: absolute;
+  width: clamp(84px, 10vw, 142px);
+  height: clamp(96px, 12vw, 164px);
+  opacity: 0.72;
+  background-position: 0 50%;
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
+  filter:
+    brightness(0.86)
+    saturate(0.92)
+    drop-shadow(0 16px 14px rgba(0, 0, 0, 0.62));
+  transform-origin: 50% 100%;
+  animation:
+    walkSheet 760ms steps(4) infinite,
+    packWalk 820ms steps(4, end) infinite,
+    packAdvance 5.8s linear infinite;
+  animation-delay: calc(var(--pack-index) * -0.9s);
+}
+
+.pack-beast {
+  animation-duration: 540ms, 640ms, 5.4s;
+}
+
+.pack-brute {
+  animation-duration: 980ms, 980ms, 6.4s;
+}
+
+.pack-enemy-1 {
+  right: 2%;
+  bottom: 70px;
+}
+
+.pack-enemy-2 {
+  right: 14%;
+  bottom: 116px;
+  width: clamp(72px, 8vw, 116px);
+  height: clamp(84px, 10vw, 140px);
+  opacity: 0.58;
+}
+
+.pack-enemy-3 {
+  right: 34%;
+  bottom: 88px;
+  opacity: 0.46;
+}
+
+.pack-enemy-4 {
+  right: 50%;
+  bottom: 128px;
+  width: clamp(70px, 8vw, 112px);
+  height: clamp(82px, 10vw, 138px);
+  opacity: 0.36;
 }
 
 .enemy-crown {
@@ -304,6 +613,7 @@ button {
   border-radius: 8px;
   background: rgba(8, 10, 12, 0.72);
   backdrop-filter: blur(12px);
+  z-index: 6;
 }
 
 .bleed-meter {
@@ -646,6 +956,66 @@ kbd {
   }
 }
 
+@keyframes stageMarch {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes heroStride {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  25% {
+    translate: 1px -3px;
+  }
+  50% {
+    translate: 0 1px;
+  }
+  75% {
+    translate: -1px -2px;
+  }
+}
+
+@keyframes walkSheet {
+  from {
+    background-position: 0 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes heroAdvance {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes heroFrame {
+  0%,
+  100% {
+    transform: rotate(-1deg) skewX(0deg) scaleY(1);
+  }
+  25% {
+    transform: rotate(1.2deg) skewX(-1deg) scaleY(0.985);
+  }
+  50% {
+    transform: rotate(0deg) skewX(0.8deg) scaleY(1.012);
+  }
+  75% {
+    transform: rotate(-1.4deg) skewX(1deg) scaleY(0.99);
+  }
+}
+
 @keyframes enemyHit {
   0%,
   100% {
@@ -653,6 +1023,77 @@ kbd {
   }
   55% {
     transform: translateX(8px);
+  }
+}
+
+@keyframes enemyWalk {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  25% {
+    translate: -2px -2px;
+  }
+  50% {
+    translate: -5px 1px;
+  }
+  75% {
+    translate: -2px -3px;
+  }
+}
+
+@keyframes enemyPress {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes enemyFrame {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleY(1);
+  }
+  25% {
+    transform: rotate(-1deg) scaleY(0.99);
+  }
+  50% {
+    transform: rotate(1deg) scaleY(1.015);
+  }
+  75% {
+    transform: rotate(-0.6deg) scaleY(0.985);
+  }
+}
+
+@keyframes packWalk {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1 1;
+  }
+  25% {
+    translate: -2px -2px;
+    scale: 1.01 0.99;
+  }
+  50% {
+    translate: -5px 1px;
+    scale: 0.99 1.01;
+  }
+  75% {
+    translate: -2px -2px;
+    scale: 1.01 0.99;
+  }
+}
+
+@keyframes packAdvance {
+  from {
+    transform: translateX(96px);
+  }
+  to {
+    transform: translateX(-260px);
   }
 }
 
@@ -675,7 +1116,30 @@ kbd {
     background-position: 0 0, 0 0, 0 0;
   }
   to {
-    background-position: -180px 0, 0 0, 0 0;
+    background-position: -140px 0, -80px 0, 0 0;
+  }
+}
+
+@keyframes trackSleepers {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-144px);
+  }
+}
+
+@keyframes dustTrail {
+  from {
+    transform: translateX(0) scaleX(0.75);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.48;
+  }
+  to {
+    transform: translateX(-160%) scaleX(1.25);
+    opacity: 0;
   }
 }
 
@@ -752,6 +1216,49 @@ kbd {
     min-height: 460px;
   }
 
+  .combat-hud {
+    inset: 8px 8px auto;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .hero-hud {
+    grid-template-columns: 36px 1fr;
+    padding: 7px;
+  }
+
+  .hero-hud-portrait {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stage-objective {
+    display: none;
+  }
+
+  .loot-toast {
+    display: none;
+  }
+
+  .skill-wheel {
+    top: 50px;
+    grid-template-columns: repeat(2, 42px);
+    gap: 6px;
+  }
+
+  .skill-orb {
+    width: 42px;
+    height: 42px;
+  }
+
+  .skill-orb span {
+    font-size: 0.68rem;
+  }
+
+  .skill-orb small {
+    font-size: 0.48rem;
+  }
+
   .stage-hud {
     grid-template-columns: 1fr;
   }
@@ -768,6 +1275,35 @@ kbd {
     bottom: 190px;
     width: 124px;
     height: 152px;
+  }
+
+  .pack-enemy {
+    width: 76px;
+    height: 92px;
+  }
+
+  .pack-enemy-1 {
+    right: -22%;
+    bottom: 198px;
+  }
+
+  .pack-enemy-2 {
+    right: -2%;
+    bottom: 222px;
+    width: 62px;
+    height: 78px;
+  }
+
+  .pack-enemy-3 {
+    right: 34%;
+    bottom: 204px;
+  }
+
+  .pack-enemy-4 {
+    right: 48%;
+    bottom: 232px;
+    width: 58px;
+    height: 74px;
   }
 
   .enemy-boss .enemy-sprite {

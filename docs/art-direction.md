@@ -20,6 +20,10 @@ Assets are saved in `public/assets/game/`.
 - `enemy-vein-butcher.png`: Vein Butcher boss sprite.
 - `loot-drop-beam.png`: rare/legendary loot beam VFX sprite.
 - `blood-slash-effect.png`: bleed slash VFX sprite.
+- `oathbreaker-walk-sheet.png`: four-frame Oathbreaker Knight walking sheet.
+- `enemy-humanoid-walk-sheet.png`: four-frame humanoid enemy walking sheet.
+- `enemy-beast-walk-sheet.png`: four-frame Rust Hound style walking sheet.
+- `enemy-brute-walk-sheet.png`: four-frame heavy elite/Boss walking sheet.
 
 ## Shared Transparent Sprite Prompt Pattern
 
@@ -30,6 +34,19 @@ Primary request: Create a full-body dark fantasy 2.5D side-scrolling ARPG [subje
 Subject: [specific character, monster, or effect], facing [left/right], side 3/4 view with slight top-down perspective.
 Style: realistic Diablo-like dark fantasy game sprite, crisp silhouette, high detail, low saturation, iron rust, blood red and ember accents.
 Background: perfectly flat solid #00ff00 chroma-key background for background removal. Uniform color only, no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #00ff00 in the subject. Full body visible with generous padding.
+Output constraints: no text, no watermark, no UI frame, no cast shadow, no contact shadow.
+```
+
+## Shared Walk Sheet Prompt Pattern
+
+```text
+Use case: stylized-concept
+Asset type: transparent PNG 4-frame walking sprite sheet source, chroma-key background
+Primary request: Create a 4-frame horizontal walking animation sprite sheet for [subject].
+Subject: [character/monster description], walking forward to the [left/right]. Four distinct walk-cycle frames in a single row: contact, down, passing, up. Full body visible in every frame, consistent scale, side 3/4 view with slight top-down perspective.
+Style: realistic Diablo-like dark fantasy game sprite sheet, crisp silhouettes, high detail, low saturation, iron rust, blood red and ember accents.
+Layout: exactly 4 evenly spaced frames, one horizontal row, no grid lines, no labels, no numbers, no frame boxes.
+Background: perfectly flat solid #00ff00 chroma-key background for background removal. Uniform color only, no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #00ff00 in the subject. Generous padding around each frame.
 Output constraints: no text, no watermark, no UI frame, no cast shadow, no contact shadow.
 ```
 

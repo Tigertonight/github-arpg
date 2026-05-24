@@ -5,12 +5,22 @@ import type { CombatStats, GameState, ItemInstance, LootFilterRule } from '../do
 
 const gameAssetBase = '/assets/game'
 
-const enemySprites: Record<string, string> = {
-  bone_miner: `${gameAssetBase}/enemy-bone-miner.png`,
-  rust_hound: `${gameAssetBase}/enemy-rust-hound.png`,
-  coal_cultist: `${gameAssetBase}/enemy-coal-cultist.png`,
-  black_forge_guard: `${gameAssetBase}/enemy-black-forge-guard.png`,
-  vein_butcher: `${gameAssetBase}/enemy-vein-butcher.png`,
+const enemyWalkSheets: Record<string, string> = {
+  bone_miner: `${gameAssetBase}/enemy-humanoid-walk-sheet.png`,
+  coal_cultist: `${gameAssetBase}/enemy-humanoid-walk-sheet.png`,
+  rust_hound: `${gameAssetBase}/enemy-beast-walk-sheet.png`,
+  black_forge_guard: `${gameAssetBase}/enemy-brute-walk-sheet.png`,
+  vein_butcher: `${gameAssetBase}/enemy-brute-walk-sheet.png`,
+}
+
+const packEnemyIds = ['bone_miner', 'rust_hound', 'coal_cultist', 'black_forge_guard']
+
+function getPackEnemyIds(currentEnemyId: string, stage: number, rank: string) {
+  if (rank === 'boss') return ['rust_hound', 'bone_miner', 'coal_cultist']
+
+  const pool = packEnemyIds.filter((id) => id !== currentEnemyId)
+  const size = rank === 'elite' ? 4 : 3
+  return Array.from({ length: size }, (_, index) => pool[(stage + index) % pool.length])
 }
 
 export function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
@@ -34,21 +44,75 @@ export function Stat({ label, value }: { label: string; value: string | number }
 export function StageView({ game }: { game: GameState }) {
   const hpPercent = Math.max(0, Math.round((game.enemy.currentLife / game.enemy.maxLife) * 100))
   const bleedPercent = Math.min(100, game.enemy.bleed.stacks * 11)
+  const packEnemies = getPackEnemyIds(game.enemy.enemyDefId, game.progression.stage, game.enemy.rank)
+  const heroLifePercent = Math.max(0, Math.round((game.hero.currentLife / 120) * 100))
   return (
     <div className={`stage-panel enemy-${game.enemy.rank}`}>
+      <div className="combat-hud">
+        <div className="hero-hud">
+          <div className="hero-hud-portrait" />
+          <div>
+            <strong>{game.hero.name}</strong>
+            <span>Lv.{game.hero.level} / 破誓骑士</span>
+            <div className="hero-hud-bar">
+              <b style={{ width: `${heroLifePercent}%` }} />
+            </div>
+          </div>
+        </div>
+        <div className="stage-objective">
+          <span>任务推进</span>
+          <strong>黑炉矿道 第 {game.progression.stage} 层</strong>
+        </div>
+        <div className="skill-wheel" aria-label="自动技能轮盘">
+          {game.hero.skills.map((skill, index) => {
+            const definition = skillsById[skill.skillId]
+            const cooldown = Math.ceil(skill.cooldownRemainingMs / 1000)
+            return (
+              <button className={`skill-orb skill-orb-${index + 1}`} type="button" key={skill.skillId} title={definition.name}>
+                <span>{definition.name.slice(0, 2)}</span>
+                <small>{cooldown > 0 ? `${cooldown}s` : 'AUTO'}</small>
+              </button>
+            )
+          })}
+        </div>
+        <div className="loot-toast">
+          <span>最近战利品</span>
+          <strong>{game.lastDrop?.name ?? '等待掉落'}</strong>
+        </div>
+      </div>
       <div className="lane-sky">
         <div className="moon" />
         <div className="cloud cloud-a" />
         <div className="cloud cloud-b" />
       </div>
       <div className="lane">
+        <div className="road-dust road-dust-a" />
+        <div className="road-dust road-dust-b" />
         <div className="hero-sprite" aria-label="破誓骑士">
-          <img src={`${gameAssetBase}/oathbreaker-hero.png`} alt="" />
+          <div className="sprite-sheet hero-walk-sheet" />
         </div>
         <img className="slash slash-a" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
         <img className="slash slash-b" src={`${gameAssetBase}/blood-slash-effect.png`} alt="" />
+        <div className="enemy-pack" aria-hidden="true">
+          {packEnemies.map((enemyId, index) => (
+            <div
+              className={`pack-enemy pack-enemy-${index + 1} ${enemyId === 'rust_hound' ? 'pack-beast' : enemyId === 'black_forge_guard' ? 'pack-brute' : 'pack-humanoid'}`}
+              style={
+                {
+                  '--pack-index': index,
+                  backgroundImage: `url(${enemyWalkSheets[enemyId] ?? enemyWalkSheets.bone_miner})`,
+                } as CSSProperties
+              }
+              key={`${enemyId}-${index}`}
+            />
+          ))}
+        </div>
         <div className="enemy-sprite">
-          <img src={enemySprites[game.enemy.enemyDefId] ?? enemySprites.bone_miner} alt="" />
+          <div
+            className={`sprite-sheet enemy-walk-sheet ${game.enemy.enemyDefId === 'rust_hound' ? 'enemy-sheet-beast' : ['black_forge_guard', 'vein_butcher'].includes(game.enemy.enemyDefId) ? 'enemy-sheet-brute' : 'enemy-sheet-humanoid'}`}
+            style={{ backgroundImage: `url(${enemyWalkSheets[game.enemy.enemyDefId] ?? enemyWalkSheets.bone_miner})` }}
+            aria-hidden="true"
+          />
           {game.enemy.rank !== 'normal' ? <div className="enemy-crown">{game.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
         </div>
         {game.lastDrop ? <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" /> : null}
