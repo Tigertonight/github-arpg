@@ -200,7 +200,8 @@ button {
   background-repeat: no-repeat, repeat-x;
   background-size: 100% 100%, 4096px 100%;
   background-position: 0 0, 0 50%;
-  animation: stageBgLoop 56s linear infinite;
+  animation: stageBgLoop 24s linear infinite;
+  animation-play-state: paused;
   will-change: background-position;
 }
 
@@ -256,7 +257,7 @@ button {
 }
 
 .stage-travel::before {
-  animation-duration: 24s;
+  animation-play-state: running;
 }
 
 .stage-panel::after {
@@ -438,12 +439,13 @@ button {
   z-index: 2;
   background-repeat: repeat-x;
   background-size: auto 100%;
-  animation: skyMarch 54s linear infinite;
+  animation: skyMarch 24s linear infinite;
+  animation-play-state: paused;
   will-change: background-position;
 }
 
 .stage-travel .lane-sky {
-  animation-duration: 24s;
+  animation-play-state: running;
 }
 
 .moon {
