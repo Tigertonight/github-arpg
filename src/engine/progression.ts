@@ -11,8 +11,8 @@ import { pickOne, rollInt } from './rng'
 export const HERO_START_X = 0
 /** 英雄在视口的固定锚点（百分比）。镜头始终跟随英雄。 */
 export const HERO_VIEW_X = 30
-/** 新一波敌群相对英雄当前位置生成在世界右侧多远。 */
-export const ENEMY_SPAWN_AHEAD = 70
+/** 新一波敌群相对英雄当前位置生成在世界右侧多远。需要大于视口宽度，保证从屏幕外走入。 */
+export const ENEMY_SPAWN_AHEAD = 86
 /** 英雄与敌群世界距离 < 此值，触发遭遇战。 */
 export const ENCOUNTER_DISTANCE = 32
 export const STAGES_PER_ZONE = 10

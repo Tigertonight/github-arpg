@@ -737,6 +737,11 @@ button {
   animation-iteration-count: infinite;
 }
 
+.stage-combat .enemy-sprite.is-entering {
+  animation: enemyEnterFromRight 1.5s cubic-bezier(0.19, 0.82, 0.22, 1) both;
+  z-index: 2;
+}
+
 @keyframes enemyThreat {
   0%,100% { transform: translateX(0) scaleX(1) scaleY(1); }
   55%     { transform: translateX(-7px) scaleX(1.04) scaleY(0.97); }
@@ -753,6 +758,23 @@ button {
 @keyframes bossThreat {
   0%,100% { transform: translateX(0) scale(1); filter: none; }
   50%     { transform: translateX(-12px) scaleX(1.05) scaleY(0.96); filter: drop-shadow(0 0 8px rgba(200,0,0,0.5)); }
+}
+
+@keyframes enemyEnterFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(42vw) translateY(0);
+  }
+  12% {
+    opacity: 1;
+  }
+  55% {
+    transform: translateX(14vw) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
 }
 
 @keyframes enemyAttackLunge {

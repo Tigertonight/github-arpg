@@ -13,6 +13,8 @@ import { createRng } from './rng'
 const TICK_MS = 900
 /** 英雄世界坐标推进速度（单位/秒）。敌群在世界中静止，靠英雄走过去。 */
 const HERO_TRAVEL_SPEED = 22
+const ENEMY_REINFORCE_INTERVAL_MS = 1800
+const ENEMY_REINFORCE_MAX_ACTIVE = 4
 
 export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState {
   const stats = deriveCombatStats(current.hero.equipment, current.itemsById, current.hero.level)
@@ -93,6 +95,7 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
       gameTimeMs,
       stageMode: 'combat',
       stageModeUntil: 0,
+      enemyGroup: { ...current.enemyGroup, lastSpawnAtMs: gameTimeMs },
       combatLog: addLog(current.combatLog, `遭遇 ${describeGroup(current.enemyGroup)}，矿道行军停止。`),
       floatingTexts,
       lastDrop: undefined,
@@ -180,8 +183,6 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
   }
 
   const aliveAfter = members.filter((e) => e.currentLife > 0)
-  const defeatedInCombat = members.length - aliveAfter.length
-
   // 怪物反击：存活怪物按 rank 和 armor 造成伤害
   let totalEnemyDamage = 0
   const earlyGameMul = current.progression.stage <= 5 ? 0.5 : 1.0
@@ -232,11 +233,11 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
 
   // 群组未清空 → 继续战斗
   if (aliveAfter.length > 0) {
-    const nextMembers = replenishCombatStream(current, aliveAfter, defeatedInCombat, rng)
+    const nextEnemyGroup = reinforceCombatStream(current, aliveAfter, gameTimeMs, rng)
     return {
       ...current,
       hero,
-      enemyGroup: { ...current.enemyGroup, members: nextMembers },
+      enemyGroup: nextEnemyGroup,
       gameTimeMs,
       stageMode: 'combat',
       stageModeUntil: 0,
@@ -255,29 +256,31 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
   )
 }
 
-function replenishCombatStream(
+function reinforceCombatStream(
   current: GameState,
   aliveMembers: EnemyInstance[],
-  defeatedCount: number,
+  gameTimeMs: number,
   rng: ReturnType<typeof createRng>,
-): EnemyInstance[] {
-  if (defeatedCount <= 0) return aliveMembers
-  if (aliveMembers.some((enemy) => enemy.rank === 'boss')) return aliveMembers
+): GameState['enemyGroup'] {
+  const baseGroup = { ...current.enemyGroup, members: aliveMembers }
+  if (aliveMembers.some((enemy) => enemy.rank === 'boss')) return baseGroup
+  if (aliveMembers.length >= ENEMY_REINFORCE_MAX_ACTIVE) return baseGroup
 
-  const targetCount = current.enemyGroup.members.length
-  const replacementsNeeded = Math.max(0, targetCount - aliveMembers.length)
-  if (replacementsNeeded <= 0) return aliveMembers
+  const lastSpawnAtMs = current.enemyGroup.lastSpawnAtMs ?? current.gameTimeMs
+  if (gameTimeMs - lastSpawnAtMs < ENEMY_REINFORCE_INTERVAL_MS) return baseGroup
 
-  const replacements: EnemyInstance[] = []
-  for (let i = 0; i < replacementsNeeded; i += 1) {
-    const enemy = createEnemyForStage(current.progression.zoneId, current.progression.stage, rng)
-    if (targetCount > 1) {
-      enemy.maxLife = Math.round(enemy.maxLife * 0.55)
-      enemy.currentLife = enemy.maxLife
-    }
-    replacements.push(enemy)
+  const enemy = createEnemyForStage(current.progression.zoneId, current.progression.stage, rng)
+  enemy.spawnedAtMs = gameTimeMs
+  if (ENEMY_REINFORCE_MAX_ACTIVE > 1) {
+    enemy.maxLife = Math.round(enemy.maxLife * 0.55)
+    enemy.currentLife = enemy.maxLife
   }
-  return [...aliveMembers, ...replacements]
+
+  return {
+    ...baseGroup,
+    members: [...aliveMembers, enemy],
+    lastSpawnAtMs: gameTimeMs,
+  }
 }
 
 function coolDownSkills(current: GameState, deltaMs: number) {

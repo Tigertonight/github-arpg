@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ENCOUNTER_DISTANCE, HERO_VIEW_X } from '../../engine/progression'
+import { ENCOUNTER_DISTANCE, ENEMY_SPAWN_AHEAD, HERO_VIEW_X } from '../../engine/progression'
 import { ENEMY_FORMATION_GAP, getAnimationFrame, getEnemyMemberViewX, getStageMotionState, HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT } from '../motion'
 
 describe('stage motion projection', () => {
@@ -36,6 +36,10 @@ describe('stage motion projection', () => {
     expect(getEnemyMemberViewX(groupX, 0)).toBe(groupX)
     expect(getEnemyMemberViewX(groupX, 1)).toBe(groupX + ENEMY_FORMATION_GAP)
     expect(getEnemyMemberViewX(groupX, 2)).toBe(groupX + ENEMY_FORMATION_GAP * 2)
+  })
+
+  it('starts new enemy groups beyond the right edge before they walk into view', () => {
+    expect(HERO_VIEW_X + ENEMY_SPAWN_AHEAD).toBeGreaterThan(100)
   })
 })
 

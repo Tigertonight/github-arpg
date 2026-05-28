@@ -204,6 +204,31 @@ game UI element, dark panel, gold bronze ornament, RPG inventory style, isolated
   - idle 和 combat 帧使用同一画布规格，避免进入遭遇时闪烁
   - 透明背景 PNG，无矩形底、无其他怪物残片
 
+### enemy-[enemyId]-attack-sheet.png（当前缺口）
+- **尺寸：** 2-4 帧横向 spritesheet，每帧 360×420px；2 帧总尺寸 720×420px，4 帧总尺寸 1440×420px
+- **当前状态：** 只有 `forge_serpent` 已接入独立 attack sheet；其他敌人进入攻击状态时仍使用 walk sheet 暂停帧 + CSS lunge 近似表现。
+- **优先级：** 高。用于治理“敌人进入遭遇后突然切状态、攻击像静态平移”的问题。
+- **适用对象：** `bone_miner`、`black_forge_guard`、`coal_cultist`、`rust_hound`、`furnace_brute`、`slag_warden`、各 boss。
+- **硬性要求：**
+  - 必须和对应 walk sheet 是同一个怪物造型、同一视角、同一比例。
+  - 脚底锚点固定：每帧底线一致，不能攻击时变大/变小。
+  - 攻击动作要有明确的 windup 和 impact，不要只做整体前移。
+  - 画布透明，不要背景矩形、白底、绿底残边。
+- 攻击帧可以有武器/爪击/冲撞拖影，但不能遮住怪物主体轮廓。
+
+#### 已补齐并接入
+- `enemy-bone-miner-attack-sheet.png`
+- `enemy-black-forge-guard-attack-sheet.png`
+- `enemy-coal-cultist-attack-sheet.png`
+- `enemy-rust-hound-attack-sheet.png`
+- `enemy-furnace-brute-attack-sheet.png`
+- `enemy-slag-warden-attack-sheet.png`
+
+### enemy 入场治理补充
+- 新敌人应从屏幕右侧外生成，先播放 walk 动作进入队形点。
+- 入场期间不播放 attack，不显示血条/精英牌，避免“凭空出现”和“刚出现就攻击”的突兀感。
+- 美术上每个敌人的 walk sheet 必须能单独支撑 1.5 秒入场动画，因此至少 4 帧真实走路动作。
+
 ### 推荐 Prompt（英雄动作表）
 ```
 dark fantasy ARPG 2D spritesheet, oathbreaker knight in heavy black armor with bronze gold trim, side view facing right, consistent character scale across all frames, fixed feet anchor point, transparent background, 8 animation frames in one horizontal spritesheet: idle, idle breathing, attack windup with axe raised, downswing, impact, recover, hit reaction, death kneel, no extra characters, no cropped weapon, no frame border, game-ready sprite sheet

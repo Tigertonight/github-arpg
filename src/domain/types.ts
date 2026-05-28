@@ -231,6 +231,8 @@ export interface EnemyInstance {
   maxLife: number
   armor: number
   bleed: BleedState
+  /** 战斗中补位刷新的入场时间。存在时 UI 会先播放从屏幕外走入的动作。 */
+  spawnedAtMs?: number
 }
 
 /** 一波敌人。整组共享一个横向锚点 x，组内成员相对锚点错开排列。 */
@@ -238,6 +240,8 @@ export interface EnemyGroup {
   /** 横向锚点 0-100，沿 lane 从右向左推进。 */
   x: number
   members: EnemyInstance[]
+  /** 最近一次战斗中增援刷新时间。用于按时间流式刷怪，而不是死亡即补。 */
+  lastSpawnAtMs?: number
 }
 
 export interface Chapter {

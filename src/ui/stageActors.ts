@@ -6,6 +6,16 @@ import { getEnemyMemberViewX, getStageMotionState, HERO_ATTACK_DURATION_MS, HERO
 export { HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT }
 
 export const gameAssetBase = '/assets/game'
+export const ENEMY_ENTER_DURATION_MS = 1500
+export const enemyAttackSheetIds = new Set([
+  'forge_serpent',
+  'bone_miner',
+  'black_forge_guard',
+  'coal_cultist',
+  'rust_hound',
+  'furnace_brute',
+  'slag_warden',
+])
 
 const skillVfx: Record<string, string> = {
   cleave: `${gameAssetBase}/vfx-cleave-impact.png`,
@@ -96,17 +106,18 @@ export function deriveStageActors(game: GameState, heroAttackFrame: number): Sta
     enemies: game.enemyGroup.members.map((enemy, idx) => {
       const familyClass = enemyFamilyClass(enemy.enemyDefId)
       const hpPct = Math.max(0, Math.round((enemy.currentLife / enemy.maxLife) * 100))
-      const isAttacking = !isTraveling && game.gameTimeMs % HERO_ATTACK_DURATION_MS >= HERO_ATTACK_DURATION_MS * 0.45
+      const isEntering = !isTraveling && typeof enemy.spawnedAtMs === 'number' && game.gameTimeMs - enemy.spawnedAtMs < ENEMY_ENTER_DURATION_MS
+      const isAttacking = !isTraveling && !isEntering && game.gameTimeMs % HERO_ATTACK_DURATION_MS >= HERO_ATTACK_DURATION_MS * 0.45
       return {
         enemy,
         xPct: getEnemyMemberViewX(motion.enemyGroupViewX, idx),
-        rootClassName: `enemy-sprite enemy-rank-${enemy.rank} ${familyClass} ${isAttacking ? 'is-attacking' : ''} ${isHitTick && enemy.currentLife > 0 ? 'is-hit' : ''}`,
-        transition: isTraveling ? 'left 0.85s linear' : 'none',
+        rootClassName: `enemy-sprite enemy-rank-${enemy.rank} ${familyClass} ${isEntering ? 'is-entering' : ''} ${isAttacking ? 'is-attacking' : ''} ${isHitTick && enemy.currentLife > 0 && !isEntering ? 'is-hit' : ''}`,
+        transition: isTraveling ? 'left 0.9s linear' : 'none',
         hpPct,
-        showHealthbar: !isTraveling,
-        showCrown: enemy.rank !== 'normal' && !isTraveling,
-        state: isTraveling ? 'walk' : isAttacking ? 'attack' : 'idle',
-        frame: isTraveling
+        showHealthbar: !isTraveling && !isEntering,
+        showCrown: enemy.rank !== 'normal' && !isTraveling && !isEntering,
+        state: isTraveling || isEntering ? 'walk' : isAttacking ? 'attack' : 'idle',
+        frame: isTraveling || isEntering
           ? {
               kind: 'walk',
               className: 'enemy-walk-sheet',
@@ -169,7 +180,7 @@ function enemyAttackSheetSrc(enemyDefId: string): string {
 }
 
 function enemyHasAttackSheet(enemyDefId: string): boolean {
-  return enemyDefId === 'forge_serpent'
+  return enemyAttackSheetIds.has(enemyDefId)
 }
 
 function makeSkillVfx(skillId: string, heroX: number, gameTimeMs: number): StageActorScene['vfx'] {

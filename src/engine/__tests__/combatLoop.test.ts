@@ -55,7 +55,7 @@ describe('combat loop stage movement', () => {
     expect(next.enemyGroup.members.length).toBeGreaterThan(0)
   })
 
-  it('streams replacement enemies when part of a combat group dies', () => {
+  it('does not instantly replace defeated enemies before the reinforcement timer', () => {
     const state = createStarterState()
     const [first, second] = state.enemyGroup.members
     const inCombat = {
@@ -68,6 +68,32 @@ describe('combat loop stage movement', () => {
           { ...first, currentLife: 0, bleed: { ...first.bleed } },
           { ...second, currentLife: second.maxLife, bleed: { ...second.bleed } },
         ],
+        lastSpawnAtMs: state.gameTimeMs,
+      },
+    }
+
+    const next = advanceCombat(inCombat)
+
+    expect(next.stageMode).toBe('combat')
+    expect(next.enemyGroup.members).toHaveLength(1)
+    expect(next.enemyGroup.members.some((enemy) => enemy.id === second.id)).toBe(true)
+  })
+
+  it('streams reinforcement enemies by time during combat', () => {
+    const state = createStarterState()
+    const [first, second] = state.enemyGroup.members
+    const inCombat = {
+      ...state,
+      stageMode: 'combat' as const,
+      stageModeUntil: 0,
+      gameTimeMs: 3_000,
+      enemyGroup: {
+        x: state.enemyGroup.x,
+        members: [
+          { ...first, currentLife: 0, bleed: { ...first.bleed } },
+          { ...second, currentLife: second.maxLife, bleed: { ...second.bleed } },
+        ],
+        lastSpawnAtMs: 0,
       },
     }
 
@@ -75,8 +101,9 @@ describe('combat loop stage movement', () => {
 
     expect(next.stageMode).toBe('combat')
     expect(next.enemyGroup.members).toHaveLength(2)
-    expect(next.enemyGroup.members.some((enemy) => enemy.id === second.id)).toBe(true)
-    expect(next.enemyGroup.members.some((enemy) => enemy.currentLife > 0 && enemy.id !== second.id)).toBe(true)
+    const reinforcement = next.enemyGroup.members.find((enemy) => enemy.id !== second.id)
+    expect(reinforcement?.spawnedAtMs).toBe(next.gameTimeMs)
+    expect(next.enemyGroup.lastSpawnAtMs).toBe(next.gameTimeMs)
   })
 
   it('routes Act 1 stages into the correct zone assets', () => {
