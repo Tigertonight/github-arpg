@@ -1,5 +1,6 @@
 import { affixesById } from '../data/affixes'
 import { baseItemsById } from '../data/items'
+import { createId } from './ids'
 import type { CombatStats, EquipmentState, ItemInstance, StatKey } from './types'
 
 export const rarityOrder = ['normal', 'magic', 'rare', 'epic', 'legendary'] as const
@@ -20,13 +21,14 @@ export const slotLabels = {
   gloves: '手套',
   boots: '靴子',
   amulet: '项链',
-  ring: '戒指',
+  ring1: '戒指 I',
+  ring2: '戒指 II',
   relic: '遗物',
 }
 
 export const equipmentSlots = Object.keys(slotLabels) as (keyof typeof slotLabels)[]
 
-const statLabels: Record<StatKey, string> = {
+export const statLabels: Record<StatKey, string> = {
   physicalDamage: '物理伤害',
   attackSpeed: '攻击速度',
   bleedDamage: '流血伤害',
@@ -36,6 +38,10 @@ const statLabels: Record<StatKey, string> = {
   armor: '护甲',
   magicFind: '魔法发现',
   goldFind: '金币发现',
+  evasion: '闪避率',
+  critChance: '暴击率',
+  critMultiplier: '暴击伤害',
+  lifeSteal: '生命偷取',
 }
 
 export function createEmptyEquipment(): EquipmentState {
@@ -47,9 +53,19 @@ export function createEmptyEquipment(): EquipmentState {
     gloves: null,
     boots: null,
     amulet: null,
-    ring: null,
+    ring1: null,
+    ring2: null,
     relic: null,
   }
+}
+
+/**
+ * 单个 affix roll 的总贡献：把 values[] 求和。
+ * （多 roll 词缀如「+10-20 物理」用平均值或求和取决于词缀语义；
+ * M2.5 阶段所有词缀都是单 roll，先用求和实现。）
+ */
+export function affixRollTotal(roll: ItemInstance['affixes'][number]): number {
+  return roll.values.reduce((sum, v) => sum + v, 0)
 }
 
 export function getItemStat(item: ItemInstance, stat: StatKey) {
@@ -59,7 +75,7 @@ export function getItemStat(item: ItemInstance, stat: StatKey) {
     .reduce((sum, modifier) => sum + modifier.value, 0)
   const affixValue = item.affixes
     .filter((roll) => affixesById[roll.affixId]?.stat === stat)
-    .reduce((sum, roll) => sum + roll.value, 0)
+    .reduce((sum, roll) => sum + affixRollTotal(roll), 0)
   return implicit + affixValue
 }
 
@@ -75,10 +91,15 @@ export function deriveCombatStats(equipment: EquipmentState, itemsById: Record<s
   const life = 120 + level * 18 + sum('life')
   const armor = 8 + level * 2 + sum('armor')
 
+  // 每级额外提升：+3 生命、+0.5 物理伤害、+0.3 护甲
+  const levelBonusLife = level * 3
+  const levelBonusPhys = level * 0.5
+  const levelBonusArmor = Math.floor(level * 0.3)
+
   return {
-    life,
-    armor,
-    physicalDamage,
+    life: life + levelBonusLife,
+    armor: armor + levelBonusArmor,
+    physicalDamage: physicalDamage + levelBonusPhys,
     attackSpeed,
     bleedDamage,
     bleedDurationMs: 4200 + sum('bleedDuration') * 100,
@@ -86,6 +107,10 @@ export function deriveCombatStats(equipment: EquipmentState, itemsById: Record<s
     magicFind: 8 + sum('magicFind'),
     goldFind: sum('goldFind'),
     itemScore: equipped.reduce((total, item) => total + itemScore(item), 0),
+    evasion: Math.min(75, sum('evasion')),
+    critChance: Math.min(75, sum('critChance')),
+    critMultiplier: 1.5 + sum('critMultiplier') / 100,
+    lifeSteal: sum('lifeSteal'),
   }
 }
 
@@ -101,6 +126,10 @@ export function itemScore(item: ItemInstance) {
     getItemStat(item, 'armor') * 0.8 +
     getItemStat(item, 'magicFind') * 1.1 +
     getItemStat(item, 'goldFind') * 0.8 +
+    getItemStat(item, 'evasion') * 1.2 +
+    getItemStat(item, 'critChance') * 1.5 +
+    getItemStat(item, 'critMultiplier') * 0.8 +
+    getItemStat(item, 'lifeSteal') * 2.0 +
     item.itemLevel * 4 +
     rarityBonus
 
@@ -111,7 +140,8 @@ export function formatAffix(item: ItemInstance) {
   return item.affixes.map((roll) => {
     const affix = affixesById[roll.affixId]
     const suffix = affix.stat === 'attackSpeed' || affix.stat === 'executeDamage' ? '%' : ''
-    return `+${roll.value}${suffix} ${statLabels[affix.stat]}`
+    const total = affixRollTotal(roll)
+    return `[T${roll.tier}] +${total}${suffix} ${statLabels[affix.stat]}`
   })
 }
 
@@ -128,5 +158,5 @@ export function getBuildTags(item: ItemInstance) {
 }
 
 export function addLog(log: { id: string; text: string }[], text: string) {
-  return [{ id: `log_${Date.now()}_${Math.random().toString(16).slice(2)}`, text }, ...log].slice(0, 8)
+  return [{ id: createId('log'), text }, ...log].slice(0, 8)
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createStarterState } from '../../persistence/migrations'
+import { createStarterState } from '../../persistence/starterState'
 import { applyOfflineProgress } from '../offline'
 
 describe('offline progress', () => {

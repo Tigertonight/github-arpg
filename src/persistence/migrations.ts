@@ -1,8 +1,26 @@
-import { createItem, defaultLootFilter } from '../engine/loot'
-import { createEnemyForStage } from '../engine/progression'
+import { affixesById, inferTierFromValue } from '../data/affixes'
+import { createItem } from '../engine/loot'
+import {
+  createEnemyGroupForStage,
+  ENEMY_SPAWN_AHEAD,
+  HERO_START_X,
+} from '../engine/progression'
 import { randomRng } from '../engine/rng'
 import { createEmptyEquipment } from '../domain/formulas'
-import type { EquipmentSlot, GameState, ItemInstance, Rarity } from '../domain/types'
+import { createStarterState } from './starterState'
+import type {
+  EnemyGroup,
+  EnemyInstance,
+  EquipmentSlot,
+  EquipmentState,
+  GameState,
+  ItemInstance,
+  Rarity,
+} from '../domain/types'
+
+export const CURRENT_SAVE_VERSION = 8
+
+export { createStarterState }
 
 type LegacyItem = {
   id: string
@@ -60,6 +78,7 @@ export function migrateLegacyState(raw: string | null): GameState | null {
 
     return {
       ...state,
+      version: CURRENT_SAVE_VERSION,
       hero: {
         ...state.hero,
         xp: legacy.xp ?? 0,
@@ -76,7 +95,7 @@ export function migrateLegacyState(raw: string | null): GameState | null {
         itemIds: converted.map((item) => item.id).filter((id) => !Object.values(equipment).includes(id)).slice(0, state.inventory.capacity),
       },
       itemsById,
-      enemy: createEnemyForStage('black_forge_mines', legacy.stage ?? 1, randomRng),
+      enemyGroup: createEnemyGroupForStage('black_forge_mines', legacy.stage ?? 1, randomRng),
       progression: {
         zoneId: 'black_forge_mines',
         stage: legacy.stage ?? 1,
@@ -94,70 +113,145 @@ export function migrateLegacyState(raw: string | null): GameState | null {
   }
 }
 
-export function createStarterState(): GameState {
-  const now = Date.now()
-  const firstWeapon = createItem('black_forge', 1, 0, randomRng)
-  const firstGloves = createItem('black_forge_elite', 1, 8, randomRng)
-  firstWeapon.rarity = 'magic'
-  firstWeapon.affixes = [{ affixId: 'cruel', value: 8 }, { affixId: 'deep_wound', value: 5 }]
-  firstGloves.rarity = 'magic'
-  firstGloves.affixes = [{ affixId: 'gouging', value: 9 }, { affixId: 'quick', value: 5 }]
-  const equipment = createEmptyEquipment()
-  equipment.weapon = firstWeapon.id
-  equipment.gloves = firstGloves.id
+/**
+ * v4 → v5 迁移：
+ * - 加 rngSeed 字段（随机种子入存档）
+ */
+export function migrateV4ToV5(state: any): GameState {
+  return {
+    ...state,
+    version: 5,
+    rngSeed: Math.floor(Math.random() * 2147483646),
+  } as GameState
+}
+
+/**
+ * v5 → v6 迁移：
+ * - 加 burstUntilMs 字段（战斗爆发状态）
+ */
+export function migrateV5ToV6(state: any): GameState {
+  return {
+    ...state,
+    version: 6,
+    burstUntilMs: state.burstUntilMs ?? 0,
+  } as GameState
+}
+
+/**
+ * v6 → v7 迁移：
+ * - 加 lastCheckInDate / checkInStreak 字段（每日签到）
+ */
+export function migrateV6ToV7(state: any): GameState {
+  return {
+    ...state,
+    version: 7,
+    lastCheckInDate: undefined,
+    checkInStreak: 0,
+  } as GameState
+}
+
+/**
+ * v7 → v8 迁移：
+ * - 加 bossChoicePending 字段（Boss 层选择弹窗）
+ */
+export function migrateV7ToV8(state: any): GameState {
+  return {
+    ...state,
+    version: 8,
+    bossChoicePending: false,
+  } as GameState
+}
+
+/**
+ * v2 → v3 迁移：
+ * - equipment.ring → equipment.ring1（ring2 设 null）
+ * - ItemInstance.slot === 'ring' 的实例落到 ring1
+ * - AffixRoll: { value } → { tier, values: [value] }
+ */
+export function migrateV2ToV3(state: any): any {
+  if (!state || typeof state !== 'object') return createStarterState()
+
+  const itemsById: Record<string, any> = { ...(state.itemsById ?? {}) }
+  for (const id of Object.keys(itemsById)) {
+    const item = itemsById[id]
+    let next = item
+    if (next.slot === 'ring') next = { ...next, slot: 'ring1' }
+    next = { ...next, affixes: (next.affixes ?? []).map(migrateAffixRoll) }
+    itemsById[id] = next
+  }
+
+  const oldEquipment = state.hero?.equipment ?? {}
+  const equipment: EquipmentState = {
+    weapon: oldEquipment.weapon ?? null,
+    offhand: oldEquipment.offhand ?? null,
+    helm: oldEquipment.helm ?? null,
+    chest: oldEquipment.chest ?? null,
+    gloves: oldEquipment.gloves ?? null,
+    boots: oldEquipment.boots ?? null,
+    amulet: oldEquipment.amulet ?? null,
+    ring1: oldEquipment.ring1 ?? oldEquipment.ring ?? null,
+    ring2: oldEquipment.ring2 ?? null,
+    relic: oldEquipment.relic ?? null,
+  }
 
   return {
-    version: 2,
-    running: true,
-    stageMode: 'travel',
-    stageModeUntil: now + 1800,
+    ...state,
+    version: 3,
+    gameTimeMs: state.gameTimeMs ?? 0,
+    // 跨版本迁移 stageModeUntil 是旧的 Date.now() 时间戳，重置为 0 避免错乱。
+    stageModeUntil: 0,
     hero: {
-      id: 'hero_oathbreaker',
-      name: '破誓骑士',
-      classId: 'oathbreaker',
-      level: 1,
-      xp: 0,
-      currentLife: 120,
+      ...state.hero,
       equipment,
-      skills: [
-        { skillId: 'cleave', runeId: 'deep_cut', cooldownRemainingMs: 0 },
-        { skillId: 'lacerating_sweep', runeId: 'echo_sweep', cooldownRemainingMs: 1200 },
-        { skillId: 'execute', runeId: 'blood_debt', cooldownRemainingMs: 2600 },
-        { skillId: 'iron_oath', runeId: 'guardian_oath', cooldownRemainingMs: 5000 },
-      ],
     },
-    resources: {
-      gold: 0,
-      shards: 0,
-      chaosStones: 0,
-      ember: 0,
-      soulAsh: 0,
-    },
-    inventory: {
-      capacity: 30,
-      itemIds: [],
-      pendingOfflineLootIds: [],
-      filter: defaultLootFilter,
-    },
-    itemsById: {
-      [firstWeapon.id]: firstWeapon,
-      [firstGloves.id]: firstGloves,
-    },
-    enemy: createEnemyForStage('black_forge_mines', 1, randomRng),
-    progression: {
-      zoneId: 'black_forge_mines',
-      stage: 1,
-      highestStage: 1,
-      kills: 0,
-    },
-    combatLog: [{ id: 'starter_log', text: '破誓骑士踏入黑炉矿道，流血构筑已装配。' }],
-    floatingTexts: [],
-    lastSavedAt: now,
+    itemsById,
   }
+}
+
+/**
+ * v3 → v4 迁移：
+ * - state.enemy 单只 → state.enemyGroup { x, members: [enemy] }
+ * - hero.x 默认值（HERO_START_X）
+ * - stageModeUntil 不再使用，重置为 0
+ */
+export function migrateV3ToV4(state: any): GameState {
+  if (!state || typeof state !== 'object') return createStarterState()
+
+  const heroX = typeof state.hero?.x === 'number' ? state.hero.x : HERO_START_X
+  const legacyEnemy: EnemyInstance | undefined = state.enemy
+  const enemyGroup: EnemyGroup = legacyEnemy
+    ? { x: heroX + ENEMY_SPAWN_AHEAD, members: [legacyEnemy] }
+    : createEnemyGroupForStage(state.progression?.zoneId ?? 'black_forge_mines', state.progression?.stage ?? 1, randomRng, heroX)
+
+  const { enemy: _omit, ...rest } = state
+
+  return {
+    ...rest,
+    version: CURRENT_SAVE_VERSION,
+    stageModeUntil: 0,
+    hero: {
+      ...state.hero,
+      x: heroX,
+    },
+    enemyGroup,
+  } as GameState
+}
+
+function migrateAffixRoll(raw: any) {
+  if (!raw || typeof raw !== 'object') return raw
+  // 已经是 v3 形态
+  if (Array.isArray(raw.values) && typeof raw.tier === 'number') return raw
+  // v2 形态：{ affixId, value }
+  const def = affixesById[raw.affixId]
+  if (!def) return { affixId: raw.affixId, tier: 5, values: [raw.value ?? 0] }
+  const value = raw.value ?? 0
+  return { affixId: raw.affixId, tier: inferTierFromValue(def, value), values: [value] }
 }
 
 function convertLegacyItem(item: LegacyItem): ItemInstance {
   const mapped = createItem('black_forge', item.level, item.find, randomRng)
+  const power = Math.max(1, item.power)
+  const speed = Math.round(item.speed * 100)
   return {
     ...mapped,
     id: item.id,
@@ -166,9 +260,9 @@ function convertLegacyItem(item: LegacyItem): ItemInstance {
     rarity: rarityMap[item.rarity],
     itemLevel: item.level,
     affixes: [
-      { affixId: 'cruel', value: Math.max(1, item.power) },
-      { affixId: 'quick', value: Math.round(item.speed * 100) },
-      { affixId: 'seeker', value: item.find },
+      { affixId: 'cruel', tier: inferTierFromValue(affixesById.cruel, power), values: [power] },
+      { affixId: 'quick', tier: inferTierFromValue(affixesById.quick, speed), values: [speed] },
+      { affixId: 'seeker', tier: inferTierFromValue(affixesById.seeker, item.find), values: [item.find] },
     ],
     tags: ['migrated'],
   }

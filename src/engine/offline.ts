@@ -1,4 +1,5 @@
 import { enemiesById } from '../data/enemies'
+import { createId } from '../domain/ids'
 import { deriveCombatStats, rarityMeta } from '../domain/formulas'
 import type { GameState } from '../domain/types'
 import { applyLootFilter, createItem, salvageValue } from './loot'
@@ -15,6 +16,8 @@ export function applyOfflineProgress(state: GameState, now = Date.now()): GameSt
   const safeStage = Math.max(1, state.progression.highestStage - (state.progression.highestStage % 10 === 0 ? 1 : 0))
   const estimatedKills = Math.max(1, Math.floor(minutes * Math.min(1.8, 0.45 + stats.itemScore / 900 + stats.attackSpeed * 0.12)))
   const rng = createRng(now + safeStage)
+  const initialGold = state.resources.gold
+  const initialPendingCount = state.inventory.pendingOfflineLootIds.length
   const next = {
     ...state,
     resources: { ...state.resources },
@@ -43,9 +46,20 @@ export function applyOfflineProgress(state: GameState, now = Date.now()): GameSt
     .sort((a, b) => rarityMeta[b.rarity].salvage - rarityMeta[a.rarity].salvage)[0]
 
   next.combatLog = [
-    { id: `offline_${now}`, text: `离线巡猎 ${minutes} 分钟，刷过已通过层并带回 ${estimatedKills} 份战利品。${best ? `最佳掉落：${best.name}。` : ''}` },
+    { id: createId('log'), text: `离线巡猎 ${minutes} 分钟，刷过已通过层并带回 ${estimatedKills} 份战利品。${best ? `最佳掉落：${best.name}。` : ''}` },
     ...next.combatLog,
   ].slice(0, 8)
 
-  return next
+  const goldGained = next.resources.gold - initialGold
+  const itemsFound = next.inventory.pendingOfflineLootIds.length - initialPendingCount
+
+  return {
+    ...next,
+    pendingOfflineResult: {
+      elapsedMs: elapsed,
+      kills: estimatedKills,
+      goldGained,
+      itemsFound,
+    },
+  }
 }
