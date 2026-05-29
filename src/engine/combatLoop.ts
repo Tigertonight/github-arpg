@@ -159,7 +159,7 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
           for (const power of getSkillCastTriggers(current)) {
             if (rng.next() < (power.params.triggerChance ?? 0)) {
               bonusStacks += power.params.bonusStacks ?? 0
-              floatingTexts.unshift({ id: createId('float'), label: '✦传说', kind: 'execute' as const, xOffset: Math.floor(rng.next() * 48) - 24 })
+              floatingTexts.unshift({ id: createId('float'), label: '传说', kind: 'execute' as const, xOffset: Math.floor(rng.next() * 48) - 24 })
             }
           }
           bonusStacksTotal += bonusStacks

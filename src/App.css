@@ -37,9 +37,11 @@
 }
 
 .game-badge-icon {
-  font-size: 1.4rem;
-  color: var(--ember);
-  text-shadow: 0 0 12px rgba(240, 116, 62, 0.6);
+  display: block;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(240, 116, 62, 0.42));
 }
 
 .game-badge-sub {
@@ -83,8 +85,11 @@
 }
 
 .res-icon {
-  font-size: 0.9rem;
-  line-height: 1;
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 5px rgba(240, 116, 62, 0.22));
 }
 
 .res-val {
@@ -162,11 +167,11 @@ button {
 
 .game-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(230px, 18vw, 270px);
+  grid-template-columns: minmax(0, 1fr) clamp(198px, 15vw, 238px);
   grid-template-rows: 1fr;
   min-height: 0;
-  gap: 10px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--panel) 74%, #080a0c);
   border: 1px solid var(--line);
@@ -211,13 +216,14 @@ button {
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   min-height: 0;
-  padding-right: 2px;
+  padding: 1px 2px 1px 0;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(200,134,10,0.3) transparent;
+  background: transparent;
 }
 
 .zone-bleeding_furnace::before {
@@ -640,6 +646,33 @@ button {
   animation: heroBodyReady 1.8s ease-in-out infinite;
 }
 
+.hero-frame-viewport::before,
+.enemy-frame-viewport::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  z-index: 0;
+  width: 58%;
+  height: 9%;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.58) 0 22%, rgba(0, 0, 0, 0.34) 48%, transparent 72%);
+  filter: blur(3px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hero-frame-viewport img,
+.hero-action-sheet,
+.hero-frame-viewport .hero-attack-frame,
+.enemy-frame-viewport img,
+.enemy-frame-viewport .enemy-static-sprite,
+.enemy-frame-viewport .enemy-walk-sheet,
+.enemy-frame-viewport .enemy-attack-sheet {
+  position: relative;
+  z-index: 1;
+}
+
 .stage-combat .hero-frame-viewport {
   overflow: visible;
   animation: none;
@@ -861,6 +894,23 @@ button {
   transform-origin: 50% 100%;
 }
 
+.enemy-slot-1 .enemy-frame-viewport {
+  transform: translateX(-50%) translateY(4px) scale(0.97);
+}
+
+.enemy-slot-2 .enemy-frame-viewport {
+  transform: translateX(-50%) translateY(9px) scale(0.93);
+}
+
+.enemy-slot-3 .enemy-frame-viewport {
+  transform: translateX(-50%) translateY(14px) scale(0.89);
+}
+
+.enemy-slot-2,
+.enemy-slot-3 {
+  opacity: 0.96;
+}
+
 .enemy-frame-viewport .enemy-static-sprite {
   display: block;
   width: 100%;
@@ -1006,11 +1056,20 @@ button {
   margin-bottom: 4px;
 }
 .boss-name-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.82rem;
   font-weight: 800;
   color: #ff6060;
   letter-spacing: 0.06em;
   text-shadow: 0 0 8px rgba(255,60,60,0.5);
+}
+
+.boss-name-text img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 .boss-hp-num {
   font-size: 0.72rem;
@@ -1102,22 +1161,22 @@ button {
 
 .stage-hud {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 8px;
+  left: 16px;
+  right: 16px;
+  bottom: 7px;
   display: grid;
-  grid-template-columns: minmax(180px, 0.42fr) minmax(180px, 1fr) auto minmax(132px, 0.28fr) auto;
+  grid-template-columns: minmax(150px, 0.32fr) minmax(180px, 1fr) auto minmax(116px, 0.22fr) auto;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px;
+  gap: 7px;
+  min-height: 36px;
+  padding: 5px 9px;
   border: 1px solid rgba(200, 134, 10, 0.14);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(10, 7, 4, 0.62), rgba(8, 5, 3, 0.48));
+  background: linear-gradient(135deg, rgba(10, 7, 4, 0.52), rgba(8, 5, 3, 0.38));
   backdrop-filter: blur(8px);
   z-index: 6;
   box-shadow: 0 -1px 0 rgba(200, 134, 10, 0.08) inset, 0 8px 18px rgba(0,0,0,0.34);
-  opacity: 0.78;
+  opacity: 0.72;
   transition: opacity 160ms ease, background 160ms ease;
 }
 
@@ -1188,7 +1247,7 @@ button {
   display: block;
   overflow: hidden;
   color: var(--text-strong);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1242,14 +1301,14 @@ button {
 }
 
 .panel-section .panel-title {
-  margin-bottom: 6px;
-  padding-bottom: 5px;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--line);
 }
 
 .panel-section {
   position: relative;
-  padding: 8px 10px;
+  padding: 7px 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -1284,7 +1343,7 @@ button {
   padding: 0 0 0 16px;
   font-size: 0.75rem;
   color: var(--muted);
-  max-height: 88px;
+  max-height: 72px;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -2170,8 +2229,8 @@ kbd {
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-  padding: 8px;
+  gap: 5px;
+  padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   background: rgba(9, 11, 12, 0.88);
@@ -2182,9 +2241,9 @@ kbd {
 .mobile-dock button {
   display: grid;
   place-items: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
-  min-height: 50px;
+  min-height: 44px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -2202,10 +2261,22 @@ kbd {
   color: currentColor;
 }
 
+.mobile-dock-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(240, 116, 62, 0.2));
+}
+
+.mobile-dock button.active .mobile-dock-icon {
+  filter: drop-shadow(0 0 8px rgba(255, 209, 138, 0.38));
+}
+
 .mobile-dock span {
   overflow: hidden;
   max-width: 100%;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 800;
   line-height: 1;
   text-overflow: ellipsis;
@@ -2863,8 +2934,8 @@ kbd {
 
 @media (max-height: 520px) and (orientation: landscape) {
   .app-shell {
-    gap: 5px;
-    padding: 6px;
+    gap: 4px;
+    padding: 5px;
   }
 
   .topbar {
@@ -2881,12 +2952,18 @@ kbd {
   }
 
   .game-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
     padding: 5px;
+  }
+
+  .game-right-panel {
+    display: none;
   }
 
   .combat-hud {
     inset: 6px 6px auto;
-    grid-template-columns: 150px 1fr 150px;
+    grid-template-columns: minmax(142px, 0.55fr) minmax(190px, 0.9fr) minmax(130px, 0.5fr);
     gap: 6px;
   }
 
@@ -2913,12 +2990,28 @@ kbd {
   }
 
   .stage-hud {
-    left: 10px;
-    right: 10px;
-    bottom: 8px;
-    grid-template-columns: max-content minmax(120px, 1fr) 38px;
-    gap: 8px;
-    padding: 7px 10px;
+    left: 12px;
+    right: 12px;
+    bottom: 6px;
+    grid-template-columns: minmax(108px, 0.32fr) minmax(180px, 1fr) auto 30px;
+    gap: 7px;
+    min-height: 32px;
+    padding: 4px 8px;
+  }
+
+  .stage-hud > div:first-child span {
+    display: none;
+  }
+
+  .stage-hud strong {
+    font-size: 0.76rem;
+  }
+
+  .retreat-btn {
+    width: 30px;
+    height: 28px;
+    padding: 0;
+    font-size: 0.72rem;
   }
 
   .bleed-meter {
@@ -2926,16 +3019,22 @@ kbd {
   }
 
   .mobile-dock {
-    gap: 4px;
-    padding: 5px;
+    gap: 3px;
+    padding: 4px 5px;
   }
 
   .mobile-dock button {
-    min-height: 38px;
+    min-height: 32px;
+    padding: 2px 0;
+  }
+
+  .mobile-dock-icon {
+    width: 24px;
+    height: 24px;
   }
 
   .mobile-dock span {
-    font-size: 0.6rem;
+    font-size: 0.56rem;
   }
 
   .mobile-sheet-panel {
@@ -3116,19 +3215,60 @@ kbd {
 }
 
 .zone-debuff-badge {
-  font-size: 11px;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
   margin-left: 4px;
   cursor: help;
 }
 
+.zone-debuff-badge img,
+.button-art-icon,
+.panel-title-art-icon,
+.footer-art-icon,
+.inline-art-icon,
+.boss-choice-btn-icon {
+  display: block;
+  object-fit: contain;
+}
+
+.zone-debuff-badge img {
+  width: 18px;
+  height: 18px;
+}
+
+.button-art-icon {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 0 6px rgba(240, 116, 62, 0.28));
+}
+
+.button-art-icon.small,
+.inline-art-icon,
+.boss-choice-btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.inline-art-icon {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: -4px;
+}
+
 /* ─── 签到按钮 ─── */
 .check-in-btn {
+  display: inline-grid;
+  place-items: center;
   background: linear-gradient(135deg, #002a1a, #004d30);
   border: 1px solid #00a060;
   color: #4cff9e;
   font-weight: 700;
   font-size: 12px;
-  padding: 5px 12px;
+  width: 42px;
+  min-height: 38px;
+  padding: 0;
   border-radius: 6px;
   cursor: pointer;
   animation: checkInPulse 1.5s ease-in-out infinite alternate;
@@ -3146,12 +3286,17 @@ kbd {
 /* ─── 爆发按钮 ─── */
 
 .burst-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: linear-gradient(135deg, #5a3a00, #8b5e00);
   border: 1px solid #c8860a;
   color: #ffd700;
   font-weight: 700;
   font-size: 12px;
-  padding: 6px 14px;
+  min-height: 38px;
+  padding: 5px 12px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
@@ -3350,14 +3495,24 @@ kbd {
 }
 .affix-lock-btn,
 .affix-reroll-btn {
+  display: inline-grid;
+  place-items: center;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 4px;
-  padding: 2px 5px;
-  font-size: 11px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   cursor: pointer;
   transition: background 0.15s;
   line-height: 1.4;
+}
+
+.affix-lock-btn img,
+.affix-reroll-btn img {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
 }
 .affix-lock-btn:hover,
 .affix-reroll-btn:hover:not(:disabled) {
@@ -3379,6 +3534,10 @@ kbd {
   justify-content: center;
 }
 .expand-inventory-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   background: linear-gradient(135deg, #1a1400, #2d2200);
   border: 1px solid #4a3800;
   color: #c8a060;
@@ -3403,10 +3562,12 @@ kbd {
   position: absolute;
   top: 2px;
   right: 2px;
-  font-size: 8px;
-  color: #4cff6e;
-  text-shadow: 0 0 6px #4cff6e;
-  line-height: 1;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(150, 255, 166, 0.82);
+  border-radius: 50%;
+  background: radial-gradient(circle, #d8ffd6 0 22%, #4cff6e 42%, transparent 72%);
+  box-shadow: 0 0 8px rgba(76, 255, 110, 0.9);
   pointer-events: none;
 }
 
@@ -3432,7 +3593,14 @@ kbd {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
-.boss-choice-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.boss-choice-icon {
+  display: block;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 8px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(240, 76, 48, 0.35));
+}
 .boss-choice-title { font-size: 1.3rem; font-weight: 900; color: #ffd18a; margin: 0 0 6px; letter-spacing: 0.08em; }
 .boss-choice-desc { font-size: 0.82rem; color: var(--muted); margin: 0 0 20px; }
 .boss-choice-btns { display: flex; gap: 12px; }
@@ -3449,17 +3617,27 @@ kbd {
 
 /* ─── 撤退按钮 ─── */
 .retreat-btn {
+  display: inline-grid;
+  place-items: center;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
   border-radius: 6px; padding: 4px 8px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
+}
+
+.retreat-btn img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 .retreat-btn:hover:not(:disabled) { background: rgba(255,100,100,0.15); border-color: rgba(255,100,100,0.4); }
 .retreat-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
 /* ─── 技能轮盘图标 ─── */
 .skill-orb-icon {
-  font-size: 1.1rem;
-  line-height: 1;
   display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(240, 116, 62, 0.28));
 }
 
 /* ─── 背包容量头部 ─── */
@@ -3548,7 +3726,11 @@ kbd {
   border-bottom: 1px solid rgba(200, 134, 10, 0.15);
 }
 .offline-modal-icon {
-  font-size: 1.4rem;
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(240, 116, 62, 0.28));
 }
 .offline-modal-header h3 {
   flex: 1;
@@ -3588,7 +3770,9 @@ kbd {
 .offline-stat-icon {
   grid-row: 1 / 3;
   grid-column: 1;
-  font-size: 1.2rem;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
   place-self: center;
 }
 .offline-stat-label {
@@ -3682,7 +3866,26 @@ kbd {
   cursor: pointer;
   transition: all 0.15s;
 }
-.panel-tab span:first-child { font-size: 0.9rem; }
+
+.panel-tab-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(240, 116, 62, 0.18));
+}
+
+.panel-tab.active .panel-tab-icon {
+  filter: drop-shadow(0 0 8px rgba(255, 209, 138, 0.34));
+}
+
+.panel-title-art-icon,
+.footer-art-icon {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 0 6px rgba(240, 116, 62, 0.28));
+}
+
 .panel-tab:hover { background: rgba(255,255,255,0.06); color: var(--text-strong); }
 .panel-tab.active {
   background: rgba(200,134,10,0.15);

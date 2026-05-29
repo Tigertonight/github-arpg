@@ -113,7 +113,7 @@ export function deriveStageActors(game: GameState, heroAttackFrame: number): Sta
       return {
         enemy,
         xPct: getEnemyMemberViewX(motion.enemyGroupViewX, formationSlot),
-        rootClassName: `enemy-sprite enemy-rank-${enemy.rank} ${familyClass} ${isEntering ? 'is-entering' : ''} ${isAttacking ? 'is-attacking' : ''} ${isHitTick && enemy.currentLife > 0 && !isEntering ? 'is-hit' : ''}`,
+        rootClassName: `enemy-sprite enemy-slot-${Math.min(formationSlot, 3)} enemy-rank-${enemy.rank} ${familyClass} ${isEntering ? 'is-entering' : ''} ${isAttacking ? 'is-attacking' : ''} ${isHitTick && enemy.currentLife > 0 && !isEntering ? 'is-hit' : ''}`,
         transition: ENEMY_POSITION_TRANSITION,
         hpPct,
         showHealthbar: !isTraveling && !isEntering,

@@ -7,6 +7,7 @@ import { formatAffix, getBuildTags, itemScore, rarityMeta, slotLabels, statLabel
 import { affixesById } from '../data/affixes'
 import { useAnimationFrameIndex } from './motion'
 import { deriveStageActors, gameAssetBase, HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT } from './stageActors'
+import { uiIcons, type UiIconKey } from './uiIcons'
 import type { GameAction } from '../engine/actions'
 import type { CombatStats, EnemyInstance, EquipmentSlot, GameState, ItemInstance, LootFilterRule } from '../domain/types'
 
@@ -42,11 +43,11 @@ function totalBleedStacks(members: EnemyInstance[]): number {
   return members.reduce((sum, e) => sum + e.bleed.stacks, 0)
 }
 
-const SKILL_ICONS: Record<string, string> = {
-  cleave: '⚔',
-  lacerating_sweep: '🌀',
-  execute: '💀',
-  iron_oath: '🛡',
+const SKILL_ICONS: Record<string, UiIconKey> = {
+  cleave: 'skills',
+  lacerating_sweep: 'chaos',
+  execute: 'boss',
+  iron_oath: 'equip',
 }
 
 const STAT_ICON_SRC: Record<string, string> = {
@@ -130,13 +131,13 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
           <strong>{zone.name} 第 {game.progression.stage} 层</strong>
           {zoneAffixIds.length > 0 && (
             <span className="zone-debuff-badge" title={`区域效果：${zoneAffixIds.join(', ')}`}>
-              ⚠️
+              <img src={uiIcons.warning} alt="" />
             </span>
           )}
           <div className="zone-progress-bar">
             <div className="zone-progress-fill" style={{ width: `${progressPct}%` }} />
             <span className="zone-progress-label">
-              {stageInZone === 10 ? '⚔️ BOSS' : `距 BOSS ${10 - stageInZone} 层`}
+              {stageInZone === 10 ? 'BOSS' : `距 BOSS ${10 - stageInZone} 层`}
             </span>
           </div>
         </div>
@@ -144,10 +145,12 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
           {game.hero.skills.map((skill, index) => {
             const definition = skillsById[skill.skillId]
             const cooldown = Math.ceil(skill.cooldownRemainingMs / 1000)
-            const icon = SKILL_ICONS[skill.skillId] ?? definition.name.slice(0, 2)
+            const icon = SKILL_ICONS[skill.skillId]
             return (
               <button className={`skill-orb skill-orb-${index + 1}`} type="button" key={skill.skillId} title={definition.name}>
-                <span className="skill-orb-icon">{icon}</span>
+                {icon
+                  ? <img className="skill-orb-icon" src={uiIcons[icon]} alt="" />
+                  : <span className="skill-orb-icon">{definition.name.slice(0, 2)}</span>}
                 <small>{cooldown > 0 ? `${cooldown}s` : 'AUTO'}</small>
               </button>
             )
@@ -161,7 +164,10 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
       {lead.rank === 'boss' && !isTraveling && (
         <div className="boss-healthbar-track">
           <div className="boss-healthbar-label">
-            <span className="boss-name-text">💀 {lead.name}</span>
+            <span className="boss-name-text">
+              <img src={uiIcons.boss} alt="" />
+              {lead.name}
+            </span>
             <span className="boss-hp-num">{lead.currentLife} / {lead.maxLife}</span>
           </div>
           <div className="boss-healthbar-bar">
@@ -286,7 +292,7 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
         {dispatch && (
           <button className="retreat-btn" onClick={() => dispatch({ type: 'retreat' })}
             title="撤退到当前区域第 1 层" disabled={game.progression.stage <= 1}>
-            🏃
+            <img src={uiIcons.retreat} alt="" />
           </button>
         )}
       </div>
@@ -342,7 +348,7 @@ export function InventoryPanel({
       {/* 背包容量头部 */}
       <div className={`inventory-header ${isFull ? 'inv-full' : isNearFull ? 'inv-near-full' : ''}`}>
         <span className="inv-capacity-label">
-          {isFull ? '⚠️ 背包已满' : `${usedSlots} / ${totalSlots}`}
+          {isFull ? <><img className="inline-art-icon" src={uiIcons.warning} alt="" />背包已满</> : `${usedSlots} / ${totalSlots}`}
         </span>
         {usedSlots > 0 && (
           <button
@@ -351,7 +357,8 @@ export function InventoryPanel({
             onClick={() => onSalvageBelow?.(minEquippedScore)}
             title={`分解低于 ${minEquippedScore} 分的道具`}
           >
-            🗑 批量分解
+            <img className="button-art-icon small" src={uiIcons.salvage} alt="" />
+            批量分解
           </button>
         )}
       </div>
@@ -382,7 +389,7 @@ export function InventoryPanel({
                   {equippedForSlot === null ? 'NEW' : delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`}
                 </span>
               )}
-              {hasSynergy && <span className="synergy-dot" title="与当前技能组有协同">✦</span>}
+              {hasSynergy && <span className="synergy-dot" title="与当前技能组有协同" />}
             </button>
           ) : (
             <div key={`empty-${idx}`} className="item-cell item-cell-empty" />
@@ -397,7 +404,8 @@ export function InventoryPanel({
           disabled={game.resources.gold < 500 + game.inventory.capacity * 200}
           title={`扩容背包 +8 格（消耗 ${500 + game.inventory.capacity * 200} 金币）`}
         >
-          📦 扩容背包 -{500 + game.inventory.capacity * 200}G
+          <img className="button-art-icon small" src={uiIcons.expandInventory} alt="" />
+          扩容背包 -{500 + game.inventory.capacity * 200}G
         </button>
       </div>
       {selectedItem ? (
@@ -532,7 +540,7 @@ function ItemDetailPanel({
                 onClick={() => onToggleAffixLock?.(item.id, i)}
                 title={affix.locked ? '解锁词缀' : '锁定词缀'}
               >
-                {affix.locked ? '🔒' : '🔓'}
+                <img src={affix.locked ? uiIcons.lock : uiIcons.unlock} alt="" />
               </button>
               <button
                 type="button"
@@ -541,7 +549,7 @@ function ItemDetailPanel({
                 onClick={() => onRerollAffix?.(item.id, i)}
                 title={`重铸此词缀（消耗 3 混沌石，当前：${game.resources.chaosStones}）`}
               >
-                🎲
+                <img src={uiIcons.reroll} alt="" />
               </button>
             </div>
           </div>
@@ -593,17 +601,17 @@ function ItemCompareColumn({ title, item, legendaryName }: { title: string; item
 
 // 装备槽位的排列顺序——仿传奇/梦幻的身体轮廓布局
 // 左列: 武器/副手   中列: 头盔/胸甲/手套/靴子   右列: 项链/戒指x2/遗物
-const EQUIP_LAYOUT: Array<{ slot: EquipmentSlot; label: string; icon: string }> = [
-  { slot: 'weapon',  label: '武器', icon: '⚔️' },
-  { slot: 'helm',    label: '头盔', icon: '⛏️' },
-  { slot: 'amulet',  label: '项链', icon: '️' },
-  { slot: 'offhand', label: '副手', icon: '🛡️' },
-  { slot: 'chest',   label: '胸甲', icon: '🧳' },
-  { slot: 'ring1',   label: '戒指', icon: '💍' },
-  { slot: 'gloves',  label: '手套', icon: '🧤' },
-  { slot: 'ring2',   label: '戒指', icon: '💍' },
-  { slot: 'boots',   label: '靴子', icon: '👢' },
-  { slot: 'relic',   label: '遗物', icon: '🔮' },
+const EQUIP_LAYOUT: Array<{ slot: EquipmentSlot; label: string }> = [
+  { slot: 'weapon',  label: '武器' },
+  { slot: 'helm',    label: '头盔' },
+  { slot: 'amulet',  label: '项链' },
+  { slot: 'offhand', label: '副手' },
+  { slot: 'chest',   label: '胸甲' },
+  { slot: 'ring1',   label: '戒指' },
+  { slot: 'gloves',  label: '手套' },
+  { slot: 'ring2',   label: '戒指' },
+  { slot: 'boots',   label: '靴子' },
+  { slot: 'relic',   label: '遗物' },
 ]
 
 export function EquipmentPanel({ game }: { game: GameState }) {

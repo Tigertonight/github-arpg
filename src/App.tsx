@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useReducer, useState } from 'react'
-import { Axe, Backpack, FlaskConical, Gem, Pause, Play, RotateCcw, Shield, SlidersHorizontal, Sparkles, Swords, X } from 'lucide-react'
+import { Pause, Play, X } from 'lucide-react'
 import './App.css'
 import { deriveCombatStats, itemScore } from './domain/formulas'
 import { reduce } from './engine/reducer'
@@ -13,17 +13,18 @@ import {
   StageView,
   StatsPanel,
 } from './ui/panels'
+import { uiIcons, type UiIconKey } from './ui/uiIcons'
 
 const TICK_MS = 900
 type MobilePanel = 'inventory' | 'equipment' | 'skills' | 'stats' | 'filter' | 'log'
 
-const mobilePanels: Array<{ id: MobilePanel; label: string; icon: typeof Backpack }> = [
-  { id: 'inventory', label: '背包', icon: Backpack },
-  { id: 'equipment', label: '装备', icon: Shield },
-  { id: 'skills', label: '技能', icon: Swords },
-  { id: 'stats', label: '参数', icon: Axe },
-  { id: 'filter', label: '筛选', icon: SlidersHorizontal },
-  { id: 'log', label: '日志', icon: Sparkles },
+const mobilePanels: Array<{ id: MobilePanel; label: string; icon: UiIconKey }> = [
+  { id: 'inventory', label: '背包', icon: 'bag' },
+  { id: 'equipment', label: '装备', icon: 'equip' },
+  { id: 'skills', label: '技能', icon: 'skills' },
+  { id: 'stats', label: '参数', icon: 'stats' },
+  { id: 'filter', label: '筛选', icon: 'filter' },
+  { id: 'log', label: '日志', icon: 'log' },
 ]
 
 function formatDuration(ms: number): string {
@@ -75,27 +76,27 @@ function App() {
       {
         id: 'first_equip',
         condition: Object.values(game.hero.equipment).some(Boolean),
-        text: '✦ 首次装备！属性面板可查看战斗加成',
+        text: '首次装备！属性面板可查看战斗加成',
       },
       {
         id: 'first_elite',
         condition: game.progression.kills > 0 && game.progression.stage >= 3,
-        text: '⚠ 精英敌人出现，伤害更高、奖励更丰厚',
+        text: '精英敌人出现，伤害更高、奖励更丰厚',
       },
       {
         id: 'first_boss',
         condition: game.progression.stage >= 10,
-        text: '💀 BOSS 层到达！建议确认装备状态再迎战',
+        text: 'BOSS 层到达！建议确认装备状态再迎战',
       },
       {
         id: 'first_chaos',
         condition: game.resources.chaosStones >= 3,
-        text: '🌀 已攒 3 个混沌石，可在道具详情页重铸词缀',
+        text: '已攒 3 个混沌石，可在道具详情页重铸词缀',
       },
       {
         id: 'first_burst',
         condition: game.burstUntilMs > 0,
-        text: '⚡ 爆发激活！攻速 +50%，享受 30 秒狂杀',
+        text: '爆发激活！攻速 +50%，享受 30 秒狂杀',
       },
     ]
     for (const m of milestones) {
@@ -181,7 +182,7 @@ function App() {
       <header className="topbar">
         {/* 左：游戏标题徽章 */}
         <div className="game-badge">
-          <span className="game-badge-icon">⚔</span>
+          <img className="game-badge-icon" src={uiIcons.gameBadge} alt="" />
           <div>
             <span className="game-badge-sub">Forge Lane</span>
             <span className="game-badge-title">破誓骑士</span>
@@ -191,23 +192,23 @@ function App() {
         {/* 中：资源条 */}
         <div className="topbar-resources">
           <div className="res-pill">
-            <span className="res-icon">🪙</span>
+            <img className="res-icon" src={uiIcons.gold} alt="" />
             <span className="res-val">{game.resources.gold.toLocaleString()}</span>
           </div>
           <div className="res-pill">
-            <span className="res-icon">💎</span>
+            <img className="res-icon" src={uiIcons.shards} alt="" />
             <span className="res-val">{game.resources.shards}</span>
           </div>
           <div className="res-pill">
-            <span className="res-icon">🌀</span>
+            <img className="res-icon" src={uiIcons.chaos} alt="" />
             <span className="res-val">{game.resources.chaosStones}</span>
           </div>
           <div className="res-pill res-pill-kills">
-            <span className="res-icon">☠</span>
+            <img className="res-icon" src={uiIcons.kills} alt="" />
             <span className="res-val">{game.progression.kills.toLocaleString()}</span>
           </div>
           <div className="res-pill">
-            <span className="res-icon">🏆</span>
+            <img className="res-icon" src={uiIcons.trophy} alt="" />
             <span className="res-val">层 {game.progression.highestStage}</span>
           </div>
         </div>
@@ -221,7 +222,7 @@ function App() {
               onClick={() => dispatch({ type: 'checkIn' })}
               title={`签到第 ${(game.checkInStreak ?? 0) + 1} 天`}
             >
-              🎁
+              <img className="button-art-icon" src={uiIcons.checkIn} alt="" />
             </button>
           )}
           <button
@@ -231,13 +232,14 @@ function App() {
             disabled={game.resources.gold < 200 || game.burstUntilMs > game.gameTimeMs}
             title="消耗 200 金币激活爆发：攻速+50% 持续 30 秒"
           >
-            {game.burstUntilMs > game.gameTimeMs ? '⚡' : '⚡ 爆发'}
+            <img className="button-art-icon" src={uiIcons.burst} alt="" />
+            {game.burstUntilMs > game.gameTimeMs ? null : <span>爆发</span>}
           </button>
           <button type="button" className="icon-button" onClick={() => dispatch({ type: 'togglePause' })}>
             {game.running ? <Pause size={16} /> : <Play size={16} />}
           </button>
           <button type="button" className="icon-button subtle" onClick={reset} title="重开">
-            <RotateCcw size={16} />
+            <img className="button-art-icon small" src={uiIcons.reset} alt="" />
           </button>
         </div>
       </header>
@@ -249,17 +251,17 @@ function App() {
           {/* Tab 导航 */}
           <div className="panel-tabs">
             {([
-              { id: 'bag',   icon: '🎒', label: '背包' },
-              { id: 'equip', icon: '🛡', label: '装备' },
-              { id: 'skill', icon: '⚔', label: '技能' },
-              { id: 'stat',  icon: '📊', label: '属性' },
+              { id: 'bag',   icon: 'bag', label: '背包' },
+              { id: 'equip', icon: 'equip', label: '装备' },
+              { id: 'skill', icon: 'skills', label: '技能' },
+              { id: 'stat',  icon: 'stats', label: '属性' },
             ] as const).map(tab => (
               <button
                 key={tab.id}
                 className={`panel-tab${activeTab === tab.id ? ' active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                <span>{tab.icon}</span>
+                <img className="panel-tab-icon" src={uiIcons[tab.icon]} alt="" />
                 <span>{tab.label}</span>
               </button>
             ))}
@@ -274,12 +276,12 @@ function App() {
           </div>
 
           <section className="panel-section">
-            <PanelTitle icon={<SlidersHorizontal size={16} />} title="掉落筛选" />
+            <PanelTitle icon={<img className="panel-title-art-icon" src={uiIcons.filter} alt="" />} title="掉落筛选" />
             {renderFilter()}
           </section>
 
           <section className="panel-section log-section">
-            <PanelTitle icon={<Sparkles size={16} />} title="战斗记录" />
+            <PanelTitle icon={<img className="panel-title-art-icon" src={uiIcons.log} alt="" />} title="战斗记录" />
             <ol className="combat-log-list">
               {game.combatLog.slice(-30).map((entry) => (
                 <li key={entry.id}>{entry.text}</li>
@@ -290,21 +292,21 @@ function App() {
       </section>
 
       <footer className="footer-strip">
-        <Gem size={18} />
+        <img className="footer-art-icon" src={uiIcons.chaos} alt="" />
         <span>当前目标：叠流血、抓处决窗口、筛出能让 Build 成型的词缀。</span>
-        <FlaskConical size={18} />
+        <img className="footer-art-icon" src={uiIcons.reroll} alt="" />
         {bestDrop ? <strong>背包最佳：{bestDrop.name}</strong> : <strong>等待掉落</strong>}
       </footer>
 
       <nav className="mobile-dock" aria-label="移动端系统菜单">
-        {mobilePanels.map(({ id, label, icon: Icon }) => (
+        {mobilePanels.map(({ id, label, icon }) => (
           <button
             type="button"
             className={activeMobilePanel === id ? 'active' : undefined}
             onClick={() => setActiveMobilePanel((current) => (current === id ? null : id))}
             key={id}
           >
-            <Icon size={18} />
+            <img className="mobile-dock-icon" src={uiIcons[icon]} alt="" />
             <span>{label}</span>
           </button>
         ))}
@@ -331,7 +333,7 @@ function App() {
         <div className="offline-overlay" onClick={() => dispatch({ type: 'dismissOfflineResult' })}>
           <div className="offline-modal" onClick={(e) => e.stopPropagation()}>
             <div className="offline-modal-header">
-              <span className="offline-modal-icon">🌙</span>
+              <img className="offline-modal-icon" src={uiIcons.log} alt="" />
               <h3>离线结算</h3>
               <button type="button" className="offline-modal-close" onClick={() => dispatch({ type: 'dismissOfflineResult' })}>
                 <X size={18} />
@@ -339,22 +341,22 @@ function App() {
             </div>
             <div className="offline-stats">
               <div className="offline-stat">
-                <span className="offline-stat-icon">⏱</span>
+                <img className="offline-stat-icon" src={uiIcons.pause} alt="" />
                 <span className="offline-stat-label">离线时长</span>
                 <strong className="offline-stat-value">{formatDuration(game.pendingOfflineResult.elapsedMs)}</strong>
               </div>
               <div className="offline-stat">
-                <span className="offline-stat-icon">☠</span>
+                <img className="offline-stat-icon" src={uiIcons.kills} alt="" />
                 <span className="offline-stat-label">击杀数</span>
                 <strong className="offline-stat-value">{game.pendingOfflineResult.kills.toLocaleString()}</strong>
               </div>
               <div className="offline-stat">
-                <span className="offline-stat-icon">🪙</span>
+                <img className="offline-stat-icon" src={uiIcons.gold} alt="" />
                 <span className="offline-stat-label">获得金币</span>
                 <strong className="offline-stat-value gold">{game.pendingOfflineResult.goldGained.toLocaleString()}</strong>
               </div>
               <div className="offline-stat">
-                <span className="offline-stat-icon">🎁</span>
+                <img className="offline-stat-icon" src={uiIcons.checkIn} alt="" />
                 <span className="offline-stat-label">获得道具</span>
                 <strong className="offline-stat-value items">{game.pendingOfflineResult.itemsFound}</strong>
               </div>
@@ -367,17 +369,19 @@ function App() {
       {game.bossChoicePending && (
         <div className="boss-choice-overlay">
           <div className="boss-choice-modal">
-            <div className="boss-choice-icon">💀</div>
+            <img className="boss-choice-icon" src={uiIcons.boss} alt="" />
             <h3 className="boss-choice-title">BOSS 层</h3>
             <p className="boss-choice-desc">
               {game.enemyGroup.members.find(e => e.rank === 'boss')?.name ?? 'Boss'} 正在等待
             </p>
             <div className="boss-choice-btns">
               <button className="boss-choice-btn boss-choice-fight" onClick={() => dispatch({ type: 'resumeCombat' })}>
-                ⚔️ 迎战<span>掉落更多，风险更高</span>
+                <img className="boss-choice-btn-icon" src={uiIcons.skills} alt="" />
+                迎战<span>掉落更多，风险更高</span>
               </button>
               <button className="boss-choice-btn boss-choice-skip" onClick={() => dispatch({ type: 'skipBoss' })}>
-                🏃 绕过<span>跳至下一层，无奖励</span>
+                <img className="boss-choice-btn-icon" src={uiIcons.retreat} alt="" />
+                绕过<span>跳至下一层，无奖励</span>
               </button>
             </div>
           </div>

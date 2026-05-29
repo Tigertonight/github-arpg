@@ -273,7 +273,7 @@ function doCheckIn(state: GameState): GameState {
       shards: state.resources.shards + shardReward,
     },
     combatLog: addLog(state.combatLog,
-      `🎁 签到第 ${streak} 天！获得 ${reward} 金币 + ${shardReward} 裂片。`,
+      `签到第 ${streak} 天！获得 ${reward} 金币 + ${shardReward} 裂片。`,
     ),
   }
 }

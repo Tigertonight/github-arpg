@@ -1,0 +1,28 @@
+export const uiIcons = {
+  gameBadge: '/assets/game/ui-icons/ui-game-badge.png',
+  gold: '/assets/game/ui-icons/ui-gold.png',
+  shards: '/assets/game/ui-icons/ui-shards.png',
+  chaos: '/assets/game/ui-icons/ui-chaos.png',
+  kills: '/assets/game/ui-icons/ui-kills.png',
+  trophy: '/assets/game/ui-icons/ui-trophy.png',
+  bag: '/assets/game/ui-icons/ui-bag.png',
+  equip: '/assets/game/ui-icons/ui-equip.png',
+  skills: '/assets/game/ui-icons/ui-skills.png',
+  stats: '/assets/game/ui-icons/ui-stats.png',
+  filter: '/assets/game/ui-icons/ui-filter.png',
+  log: '/assets/game/ui-icons/ui-log.png',
+  checkIn: '/assets/game/ui-icons/ui-check-in.png',
+  burst: '/assets/game/ui-icons/ui-burst.png',
+  pause: '/assets/game/ui-icons/ui-pause.png',
+  reset: '/assets/game/ui-icons/ui-reset.png',
+  warning: '/assets/game/ui-icons/ui-warning.png',
+  boss: '/assets/game/ui-icons/ui-boss.png',
+  retreat: '/assets/game/ui-icons/ui-retreat.png',
+  salvage: '/assets/game/ui-icons/ui-salvage.png',
+  expandInventory: '/assets/game/ui-icons/ui-expand-inventory.png',
+  lock: '/assets/game/ui-icons/ui-lock.png',
+  unlock: '/assets/game/ui-icons/ui-unlock.png',
+  reroll: '/assets/game/ui-icons/ui-reroll.png',
+} as const
+
+export type UiIconKey = keyof typeof uiIcons
