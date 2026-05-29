@@ -231,6 +231,8 @@ export interface EnemyInstance {
   maxLife: number
   armor: number
   bleed: BleedState
+  /** 队形槽位。渲染位置按这个稳定槽位计算，避免前排死亡后后排因数组下标变化瞬移。 */
+  formationSlot?: number
   /** 战斗中补位刷新的入场时间。存在时 UI 会先播放从屏幕外走入的动作。 */
   spawnedAtMs?: number
 }

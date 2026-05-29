@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { ENCOUNTER_DISTANCE } from '../../engine/progression'
 import { createStarterState } from '../../persistence/starterState'
-import { deriveStageActors, ENEMY_ENTER_DURATION_MS } from '../stageActors'
+import { deriveStageActors, ENEMY_ENTER_DURATION_MS, ENEMY_POSITION_TRANSITION } from '../stageActors'
 
 describe('deriveStageActors', () => {
   it('uses walk resources while traveling', () => {
@@ -13,10 +14,10 @@ describe('deriveStageActors', () => {
     expect(scene.enemies.length).toBeGreaterThan(0)
     expect(scene.enemies[0].frame.kind).toBe('walk')
     expect(scene.enemies[0].frame.src).toContain(`${state.enemyGroup.members[0].enemyDefId.replaceAll('_', '-')}-walk-sheet.png`)
-    expect(scene.enemies[0].transition).toBe('left 0.9s linear')
+    expect(scene.enemies[0].transition).toBe(ENEMY_POSITION_TRANSITION)
   })
 
-  it('uses aligned attack frames and pauses the same enemy sheet in combat', () => {
+  it('uses aligned attack frames and skill vfx on the hero hit frame', () => {
     const state = {
       ...createStarterState(),
       stageMode: 'combat' as const,
@@ -30,10 +31,20 @@ describe('deriveStageActors', () => {
     }
     expect(scene.hitFrameActive).toBe(true)
     expect(scene.vfx?.src).toContain('/assets/game/')
+    expect(scene.enemies[0].transition).toBe(ENEMY_POSITION_TRANSITION)
+    expect(scene.enemies[0].showHealthbar).toBe(true)
+  })
+
+  it('keeps enemies idle before the presentation attack window', () => {
+    const state = {
+      ...createStarterState(),
+      stageMode: 'combat' as const,
+    }
+    const scene = deriveStageActors(state, 0)
+
+    expect(scene.enemies[0].state).toBe('idle')
     expect(scene.enemies[0].frame.kind).toBe('walk')
     expect(scene.enemies[0].frame.className).toContain('enemy-walk-sheet-idle')
-    expect(scene.enemies[0].transition).toBe('none')
-    expect(scene.enemies[0].showHealthbar).toBe(true)
   })
 
   it('marks combat hit feedback from floating text', () => {
@@ -66,7 +77,7 @@ describe('deriveStageActors', () => {
         ],
       },
     }
-    const scene = deriveStageActors(state, 1)
+    const scene = deriveStageActors(state, 2)
 
     expect(scene.enemies[0].state).toBe('attack')
     expect(scene.enemies[0].frame.className).toBe('enemy-attack-sheet')
@@ -98,12 +109,33 @@ describe('deriveStageActors', () => {
             },
           ],
         },
-      }, 1)
+      }, 2)
 
       expect(scene.enemies[0].state).toBe('attack')
       expect(scene.enemies[0].frame.className).toBe('enemy-attack-sheet')
       expect(scene.enemies[0].frame.src).toContain(`enemy-${enemyDefId.replaceAll('_', '-')}-attack-sheet.png`)
     }
+  })
+
+  it('keeps a surviving enemy on its assigned formation slot after earlier slots are empty', () => {
+    const base = createStarterState()
+    const state = {
+      ...base,
+      stageMode: 'combat' as const,
+      enemyGroup: {
+        ...base.enemyGroup,
+        x: base.hero.x + ENCOUNTER_DISTANCE,
+        members: [
+          {
+            ...base.enemyGroup.members[0],
+            formationSlot: 2,
+          },
+        ],
+      },
+    }
+    const scene = deriveStageActors(state, 0)
+
+    expect(scene.enemies[0].xPct).toBe(70)
   })
 
   it('walks newly streamed enemies in from offscreen before combat actions', () => {

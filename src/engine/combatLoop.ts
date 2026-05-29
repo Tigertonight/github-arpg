@@ -81,6 +81,7 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
       return {
         ...current,
         hero: { ...hero, x: newHeroX },
+        enemyGroup: { ...current.enemyGroup, x: newHeroX + ENCOUNTER_DISTANCE },
         gameTimeMs,
         bossChoicePending: true,
         floatingTexts,
@@ -95,7 +96,7 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
       gameTimeMs,
       stageMode: 'combat',
       stageModeUntil: 0,
-      enemyGroup: { ...current.enemyGroup, lastSpawnAtMs: gameTimeMs },
+      enemyGroup: { ...current.enemyGroup, x: newHeroX + ENCOUNTER_DISTANCE, lastSpawnAtMs: gameTimeMs },
       combatLog: addLog(current.combatLog, `遭遇 ${describeGroup(current.enemyGroup)}，矿道行军停止。`),
       floatingTexts,
       lastDrop: undefined,
@@ -104,7 +105,11 @@ export function advanceCombat(current: GameState, deltaMs = TICK_MS): GameState 
   }
 
   // === Combat：位置冻结，对群组施加伤害 ===
-  const members = current.enemyGroup.members.map((enemy) => ({ ...enemy, bleed: { ...enemy.bleed } }))
+  const members = current.enemyGroup.members.map((enemy, index) => ({
+    ...enemy,
+    formationSlot: enemy.formationSlot ?? index,
+    bleed: { ...enemy.bleed },
+  }))
 
   // 1. 流血 tick（每只独立结算）
   for (const enemy of members) {
@@ -271,6 +276,7 @@ function reinforceCombatStream(
 
   const enemy = createEnemyForStage(current.progression.zoneId, current.progression.stage, rng)
   enemy.spawnedAtMs = gameTimeMs
+  enemy.formationSlot = pickOpenFormationSlot(aliveMembers)
   if (ENEMY_REINFORCE_MAX_ACTIVE > 1) {
     enemy.maxLife = Math.round(enemy.maxLife * 0.55)
     enemy.currentLife = enemy.maxLife
@@ -281,6 +287,14 @@ function reinforceCombatStream(
     members: [...aliveMembers, enemy],
     lastSpawnAtMs: gameTimeMs,
   }
+}
+
+function pickOpenFormationSlot(aliveMembers: EnemyInstance[]): number {
+  const occupied = new Set(aliveMembers.map((enemy, index) => enemy.formationSlot ?? index))
+  for (let slot = 0; slot < ENEMY_REINFORCE_MAX_ACTIVE; slot += 1) {
+    if (!occupied.has(slot)) return slot
+  }
+  return aliveMembers.length
 }
 
 function coolDownSkills(current: GameState, deltaMs: number) {

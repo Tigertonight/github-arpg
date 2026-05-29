@@ -737,8 +737,55 @@ button {
   animation-iteration-count: infinite;
 }
 
+.stage-combat .enemy-sprite.is-attacking::before,
+.stage-combat .enemy-sprite.is-attacking::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.stage-combat .enemy-sprite.is-attacking::before {
+  left: clamp(-116px, -8.6vw, -72px);
+  bottom: clamp(132px, 17vw, 236px);
+  width: clamp(92px, 8.6vw, 132px);
+  height: clamp(38px, 4.6vw, 68px);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 18% 52%, rgba(255, 231, 142, 0.95) 0 5%, transparent 18%),
+    linear-gradient(105deg, transparent 0 8%, rgba(255, 210, 102, 0.92) 12%, rgba(235, 73, 34, 0.74) 43%, transparent 78%);
+  filter: blur(0.2px) drop-shadow(0 0 8px rgba(255, 107, 46, 0.74));
+  opacity: 0;
+  transform: rotate(-10deg) scaleX(0.72);
+  transform-origin: 100% 50%;
+  animation: enemyAttackSlashFx 620ms steps(2, end) infinite;
+}
+
+.stage-combat .enemy-sprite.is-attacking::after {
+  left: clamp(-54px, -3.7vw, -34px);
+  bottom: clamp(112px, 14vw, 198px);
+  width: clamp(38px, 3.8vw, 62px);
+  height: clamp(34px, 3.8vw, 58px);
+  background:
+    radial-gradient(circle, rgba(255, 235, 164, 0.92) 0 12%, rgba(255, 123, 43, 0.66) 20%, transparent 58%),
+    conic-gradient(from 24deg, transparent 0 12%, rgba(255, 191, 90, 0.88) 14% 18%, transparent 20% 36%, rgba(231, 62, 35, 0.8) 39% 43%, transparent 46%);
+  clip-path: polygon(50% 0, 64% 34%, 100% 42%, 68% 58%, 76% 100%, 50% 70%, 20% 100%, 30% 58%, 0 42%, 36% 34%);
+  opacity: 0;
+  transform: scale(0.62);
+  animation: enemyImpactSparkFx 620ms steps(2, end) infinite;
+}
+
+.stage-combat .enemy-sprite.enemy-sheet-beast.is-attacking::before {
+  bottom: clamp(86px, 11vw, 154px);
+  transform: rotate(3deg) scaleX(0.78);
+}
+
+.stage-combat .enemy-sprite.enemy-sheet-beast.is-attacking::after {
+  bottom: clamp(78px, 9.8vw, 136px);
+}
+
 .stage-combat .enemy-sprite.is-entering {
-  animation: enemyEnterFromRight 1.5s cubic-bezier(0.19, 0.82, 0.22, 1) both;
+  animation: enemyEnterFromRight 2.4s linear both;
   z-index: 2;
 }
 
@@ -763,13 +810,13 @@ button {
 @keyframes enemyEnterFromRight {
   0% {
     opacity: 0;
-    transform: translateX(42vw) translateY(0);
+    transform: translateX(46vw) translateY(0);
   }
-  12% {
+  8% {
     opacity: 1;
   }
-  55% {
-    transform: translateX(14vw) translateY(-4px);
+  50% {
+    transform: translateX(23vw) translateY(-3px);
   }
   100% {
     opacity: 1;
@@ -782,6 +829,22 @@ button {
   100% { transform: translateX(0) scaleX(1) scaleY(1); }
   42% { transform: translateX(-18px) scaleX(1.08) scaleY(0.96); }
   64% { transform: translateX(-8px) scaleX(1.03) scaleY(0.98); }
+}
+
+@keyframes enemyAttackSlashFx {
+  0%,
+  32% { opacity: 0; transform: translateX(18px) rotate(-10deg) scaleX(0.42); }
+  42% { opacity: 0.95; transform: translateX(-4px) rotate(-10deg) scaleX(1); }
+  68% { opacity: 0.42; transform: translateX(-14px) rotate(-10deg) scaleX(1.08); }
+  100% { opacity: 0; transform: translateX(-22px) rotate(-10deg) scaleX(1.12); }
+}
+
+@keyframes enemyImpactSparkFx {
+  0%,
+  40% { opacity: 0; transform: scale(0.42) rotate(0deg); }
+  48% { opacity: 0.95; transform: scale(1.05) rotate(12deg); }
+  72% { opacity: 0.35; transform: scale(0.88) rotate(28deg); }
+  100% { opacity: 0; transform: scale(0.64) rotate(40deg); }
 }
 
 .enemy-frame-viewport {

@@ -6,7 +6,8 @@ import { getEnemyMemberViewX, getStageMotionState, HERO_ATTACK_DURATION_MS, HERO
 export { HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT }
 
 export const gameAssetBase = '/assets/game'
-export const ENEMY_ENTER_DURATION_MS = 1500
+export const ENEMY_ENTER_DURATION_MS = 2400
+export const ENEMY_POSITION_TRANSITION = 'left 0.9s linear'
 export const enemyAttackSheetIds = new Set([
   'forge_serpent',
   'bone_miner',
@@ -105,14 +106,15 @@ export function deriveStageActors(game: GameState, heroAttackFrame: number): Sta
     },
     enemies: game.enemyGroup.members.map((enemy, idx) => {
       const familyClass = enemyFamilyClass(enemy.enemyDefId)
+      const formationSlot = enemy.formationSlot ?? idx
       const hpPct = Math.max(0, Math.round((enemy.currentLife / enemy.maxLife) * 100))
       const isEntering = !isTraveling && typeof enemy.spawnedAtMs === 'number' && game.gameTimeMs - enemy.spawnedAtMs < ENEMY_ENTER_DURATION_MS
-      const isAttacking = !isTraveling && !isEntering && game.gameTimeMs % HERO_ATTACK_DURATION_MS >= HERO_ATTACK_DURATION_MS * 0.45
+      const isAttacking = !isTraveling && !isEntering && heroAttackFrame >= 2
       return {
         enemy,
-        xPct: getEnemyMemberViewX(motion.enemyGroupViewX, idx),
+        xPct: getEnemyMemberViewX(motion.enemyGroupViewX, formationSlot),
         rootClassName: `enemy-sprite enemy-rank-${enemy.rank} ${familyClass} ${isEntering ? 'is-entering' : ''} ${isAttacking ? 'is-attacking' : ''} ${isHitTick && enemy.currentLife > 0 && !isEntering ? 'is-hit' : ''}`,
-        transition: isTraveling ? 'left 0.9s linear' : 'none',
+        transition: ENEMY_POSITION_TRANSITION,
         hpPct,
         showHealthbar: !isTraveling && !isEntering,
         showCrown: enemy.rank !== 'normal' && !isTraveling && !isEntering,

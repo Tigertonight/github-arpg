@@ -29,6 +29,7 @@ describe('combat loop stage movement', () => {
     }
     const next = advanceCombat(closing, 900)
     expect(next.stageMode).toBe('combat')
+    expect(next.enemyGroup.x).toBe(next.hero.x + ENCOUNTER_DISTANCE)
   })
 
   it('clears the group, spawns next group ahead, and keeps hero.x advancing', () => {
@@ -76,7 +77,9 @@ describe('combat loop stage movement', () => {
 
     expect(next.stageMode).toBe('combat')
     expect(next.enemyGroup.members).toHaveLength(1)
-    expect(next.enemyGroup.members.some((enemy) => enemy.id === second.id)).toBe(true)
+    const remaining = next.enemyGroup.members.find((enemy) => enemy.id === second.id)
+    expect(remaining).toBeTruthy()
+    expect(remaining?.formationSlot).toBe(1)
   })
 
   it('streams reinforcement enemies by time during combat', () => {
@@ -103,6 +106,7 @@ describe('combat loop stage movement', () => {
     expect(next.enemyGroup.members).toHaveLength(2)
     const reinforcement = next.enemyGroup.members.find((enemy) => enemy.id !== second.id)
     expect(reinforcement?.spawnedAtMs).toBe(next.gameTimeMs)
+    expect(reinforcement?.formationSlot).toBe(0)
     expect(next.enemyGroup.lastSpawnAtMs).toBe(next.gameTimeMs)
   })
 

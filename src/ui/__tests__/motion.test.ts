@@ -12,7 +12,7 @@ describe('stage motion projection', () => {
   it('clamps traveling enemies at the encounter line to avoid overshooting into combat', () => {
     const motion = getStageMotionState({
       stageMode: 'travel',
-      heroX: 41,
+      heroX: 49,
       enemyGroupX: 70,
     })
 
@@ -24,7 +24,7 @@ describe('stage motion projection', () => {
     const motion = getStageMotionState({
       stageMode: 'combat',
       heroX: 38,
-      enemyGroupX: 70,
+      enemyGroupX: 62,
     })
 
     expect(motion.enemyGroupViewX).toBe(HERO_VIEW_X + ENCOUNTER_DISTANCE)
