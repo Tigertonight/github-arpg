@@ -216,6 +216,44 @@ export interface EnemyDefinition {
   lootTableId: EntityId
 }
 
+export type SpriteAction = 'idle' | 'walk' | 'attack' | 'cleave' | 'sweep' | 'execute' | 'shield' | 'hit' | 'death'
+
+export interface SpriteSheetDefinition {
+  src: string
+  frames: number
+  durationMs: number
+}
+
+export interface HeroVisualDefinition {
+  id: EntityId
+  portrait: string
+  anchor: { x: number; y: number }
+  scale: number
+  actions: Partial<Record<SpriteAction, SpriteSheetDefinition>>
+  attackFrames: string[]
+  vfx: Record<string, string>
+}
+
+export interface EnemyVisualDefinition {
+  enemyDefId: EntityId
+  familyClass: 'enemy-sheet-humanoid' | 'enemy-sheet-beast' | 'enemy-sheet-brute'
+  anchor: { x: number; y: number }
+  scale: number
+  actions: Partial<Record<SpriteAction, SpriteSheetDefinition>>
+}
+
+export interface ZoneVisualDefinition {
+  zoneId: EntityId
+  backgroundLoop: string
+  backgroundSize: string
+  ground: string
+  groundOpacity: number
+  foreground: string
+  foregroundOpacity: number
+  ambient: 'embers' | 'snow' | 'mist' | 'bloodMoon' | 'abyssAsh'
+  palette: 'forge' | 'furnace' | 'choir' | 'ossuary' | 'wastes' | 'caravan' | 'crimson' | 'crypt' | 'abyss' | 'core'
+}
+
 export interface BleedState {
   stacks: number
   remainingMs: number

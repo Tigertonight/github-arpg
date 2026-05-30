@@ -8,7 +8,6 @@ import {
   EquipmentPanel,
   InventoryPanel,
   LootFilterPanel,
-  PanelTitle,
   SkillPanel,
   StageView,
   StatsPanel,
@@ -40,7 +39,6 @@ function App() {
   const [activeMobilePanel, setActiveMobilePanel] = useState<MobilePanel | null>(null)
   const [showBossKill, setShowBossKill] = useState(false)
   const [milestoneToast, setMilestoneToast] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'bag' | 'equip' | 'skill' | 'stat'>('bag')
   const stats = useMemo(
     () => game.cachedStats ?? deriveCombatStats(game.hero.equipment, game.itemsById, game.hero.level),
     [game.hero, game.itemsById, game.cachedStats],
@@ -246,49 +244,6 @@ function App() {
 
       <section className="game-grid">
         <StageView game={game} dispatch={dispatch} />
-
-        <div className="game-right-panel">
-          {/* Tab 导航 */}
-          <div className="panel-tabs">
-            {([
-              { id: 'bag',   icon: 'bag', label: '背包' },
-              { id: 'equip', icon: 'equip', label: '装备' },
-              { id: 'skill', icon: 'skills', label: '技能' },
-              { id: 'stat',  icon: 'stats', label: '属性' },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                className={`panel-tab${activeTab === tab.id ? ' active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <img className="panel-tab-icon" src={uiIcons[tab.icon]} alt="" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Tab 内容 */}
-          <div className="panel-tab-content">
-            {activeTab === 'bag' && <section className="panel-section">{renderInventory()}</section>}
-            {activeTab === 'equip' && <section className="panel-section"><EquipmentPanel game={game} /></section>}
-            {activeTab === 'skill' && <section className="panel-section"><SkillPanel game={game} /></section>}
-            {activeTab === 'stat' && <section className="panel-section"><StatsPanel game={game} stats={stats} /></section>}
-          </div>
-
-          <section className="panel-section">
-            <PanelTitle icon={<img className="panel-title-art-icon" src={uiIcons.filter} alt="" />} title="掉落筛选" />
-            {renderFilter()}
-          </section>
-
-          <section className="panel-section log-section">
-            <PanelTitle icon={<img className="panel-title-art-icon" src={uiIcons.log} alt="" />} title="战斗记录" />
-            <ol className="combat-log-list">
-              {game.combatLog.slice(-30).map((entry) => (
-                <li key={entry.id}>{entry.text}</li>
-              ))}
-            </ol>
-          </section>
-        </div>
       </section>
 
       <footer className="footer-strip">

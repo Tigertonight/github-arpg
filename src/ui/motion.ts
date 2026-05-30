@@ -9,7 +9,7 @@ export const HERO_ATTACK_DURATION_MS = 900
  * 坐标体系以 % 为单位（HERO_VIEW_X=30, ENCOUNTER_DISTANCE=32），
  * 8 表示 8%，4 只怪纵深跨度 ~24%。超过 4 只时通过 getEnemyMemberViewX 自动收敛。
  */
-export const ENEMY_FORMATION_GAP = 8
+export const ENEMY_FORMATION_GAP = 12
 
 export interface StageMotionInput {
   stageMode: StageMode

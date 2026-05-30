@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "build:enemy-runtime": "node scripts/build-runtime-enemy-walk-sheets.mjs",
+    "audit:visuals": "node scripts/audit-visual-assets.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

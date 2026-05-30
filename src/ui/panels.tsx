@@ -3,6 +3,7 @@ import { zonesById } from '../data/enemies'
 import { baseItemsById } from '../data/items'
 import { legendaryPowersById } from '../data/legendaryPowers'
 import { skillsById, runesById } from '../data/skills'
+import { getZoneVisual } from '../data/visuals'
 import { formatAffix, getBuildTags, itemScore, rarityMeta, slotLabels, statLabels } from '../domain/formulas'
 import { affixesById } from '../data/affixes'
 import { useAnimationFrameIndex } from './motion'
@@ -106,12 +107,24 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
     members[0],
   )
   const zone = zonesById[game.progression.zoneId] ?? zonesById.black_forge_mines
+  const zoneVisual = getZoneVisual(game.progression.zoneId)
   const zoneAffixIds = zone.globalAffixIds
   const heroLifePercent = Math.max(0, Math.round((game.hero.currentLife / (game.cachedStats?.life ?? 120)) * 100))
   const stageInZone = ((game.progression.stage - 1) % 10) + 1
   const progressPct = (stageInZone / 10) * 100
+  const stageStyle = {
+    '--stage-bg-image': `url("${zoneVisual.backgroundLoop}")`,
+    '--stage-bg-size': zoneVisual.backgroundSize,
+    '--stage-ground-image': `url("${zoneVisual.ground}")`,
+    '--stage-ground-opacity': zoneVisual.groundOpacity,
+    '--stage-foreground-image': `url("${zoneVisual.foreground}")`,
+    '--stage-foreground-opacity': zoneVisual.foregroundOpacity,
+  } as CSSProperties
   return (
-    <div className={`stage-panel stage-${game.stageMode} zone-${game.progression.zoneId} enemy-${lead.rank} ${scene.shakeClass}`}>
+    <div
+      className={`stage-panel stage-${game.stageMode} stage-ambient-${zoneVisual.ambient} stage-palette-${zoneVisual.palette} zone-${game.progression.zoneId} enemy-${lead.rank} ${scene.shakeClass}`}
+      style={stageStyle}
+    >
       <div className="combat-hud">
         <div className="hero-hud">
           <div className="hero-hud-portrait" />
@@ -192,11 +205,18 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
           style={{
             left: `${scene.hero.xPct}%`,
             transition: scene.hero.transition,
+            ...scene.hero.styleVars,
           }}
         >
           <div className="hero-frame-viewport" aria-hidden="true">
             {scene.hero.frame.kind === 'sheet' ? (
-              <div className={scene.hero.frame.className} />
+              <div
+                className={scene.hero.frame.className}
+                style={{
+                  '--hero-sheet-image': `url("${scene.hero.frame.src}")`,
+                  '--hero-sheet-frames': scene.hero.frame.frames,
+                } as CSSProperties}
+              />
             ) : (
               <img
                 key={scene.hero.frame.key}
@@ -230,6 +250,7 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
               style={{
                 left: `${actor.xPct}%`,
                 transition: actor.transition,
+                ...actor.styleVars,
               }}
             >
               <div className="enemy-frame-viewport" aria-hidden="true">
@@ -265,6 +286,7 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
         <div className="rail rail-a" />
         <div className="rail rail-b" />
       </div>
+      <div className="stage-foreground" aria-hidden="true" />
       <div className="stage-hud">
         <div>
           <span>

@@ -13,11 +13,11 @@ describe('deriveStageActors', () => {
     expect(scene.hero.transition).toBe('none')
     expect(scene.enemies.length).toBeGreaterThan(0)
     expect(scene.enemies[0].frame.kind).toBe('walk')
-    expect(scene.enemies[0].frame.src).toContain(`${state.enemyGroup.members[0].enemyDefId.replaceAll('_', '-')}-walk-sheet.png`)
+    expect(scene.enemies[0].frame.src).toContain(`enemy-${state.enemyGroup.members[0].enemyDefId.replaceAll('_', '-')}-walk-sheet.png`)
     expect(scene.enemies[0].transition).toBe(ENEMY_POSITION_TRANSITION)
   })
 
-  it('uses aligned attack frames and skill vfx on the hero hit frame', () => {
+  it('uses generated attack sheets and skill vfx on the hero hit frame', () => {
     const state = {
       ...createStarterState(),
       stageMode: 'combat' as const,
@@ -25,9 +25,11 @@ describe('deriveStageActors', () => {
     const scene = deriveStageActors(state, 2)
 
     expect(scene.isTraveling).toBe(false)
-    expect(scene.hero.frame.kind).toBe('image')
-    if (scene.hero.frame.kind === 'image') {
-      expect(scene.hero.frame.src).toContain('oathbreaker-attack-aligned-frame-2.png')
+    expect(scene.hero.frame.kind).toBe('sheet')
+    if (scene.hero.frame.kind === 'sheet') {
+      expect(scene.hero.frame.src).toContain('heroes/oathbreaker/')
+      expect(scene.hero.frame.src).toContain('-sheet.png')
+      expect(scene.hero.frame.frames).toBe(4)
     }
     expect(scene.hitFrameActive).toBe(true)
     expect(scene.vfx?.src).toContain('/assets/game/')
@@ -61,7 +63,7 @@ describe('deriveStageActors', () => {
     expect(scene.vfx?.className).toContain('skill-vfx-crit')
   })
 
-  it('uses dedicated attack sheets for enemies that have generated attack assets', () => {
+  it('keeps expanded enemy attacks on stable root sheets until specific attack art is cleaned', () => {
     const base = createStarterState()
     const state = {
       ...base,
@@ -80,19 +82,17 @@ describe('deriveStageActors', () => {
     const scene = deriveStageActors(state, 2)
 
     expect(scene.enemies[0].state).toBe('attack')
-    expect(scene.enemies[0].frame.className).toBe('enemy-attack-sheet')
-    expect(scene.enemies[0].frame.src).toContain('enemy-forge-serpent-attack-sheet.png')
+    expect(scene.enemies[0].frame.className).toContain('enemy-attack-sheet')
+    expect(scene.enemies[0].frame.src).toContain('enemies/runtime/forge-serpent/attack-sheet.png')
   })
 
-  it('uses generated attack sheets for high priority enemy types', () => {
+  it('keeps stable root action sheets for the first-zone enemy set', () => {
     const base = createStarterState()
     const enemyIds = [
       'bone_miner',
       'black_forge_guard',
       'coal_cultist',
       'rust_hound',
-      'furnace_brute',
-      'slag_warden',
     ]
 
     for (const enemyDefId of enemyIds) {
@@ -112,8 +112,33 @@ describe('deriveStageActors', () => {
       }, 2)
 
       expect(scene.enemies[0].state).toBe('attack')
-      expect(scene.enemies[0].frame.className).toBe('enemy-attack-sheet')
+      expect(scene.enemies[0].frame.className).toContain('enemy-attack-sheet')
       expect(scene.enemies[0].frame.src).toContain(`enemy-${enemyDefId.replaceAll('_', '-')}-attack-sheet.png`)
+    }
+  })
+
+  it('uses motion-rich specific walk sheets for later-zone enemy types', () => {
+    const base = createStarterState()
+    const enemyIds = ['pale_chorister', 'crimson_hound', 'wyrm_of_broken_word']
+
+    for (const enemyDefId of enemyIds) {
+      const scene = deriveStageActors({
+        ...base,
+        stageMode: 'travel' as const,
+        enemyGroup: {
+          ...base.enemyGroup,
+          members: [
+            {
+              ...base.enemyGroup.members[0],
+              enemyDefId,
+            },
+          ],
+        },
+      }, 0)
+
+      expect(scene.enemies[0].state).toBe('walk')
+      expect(scene.enemies[0].frame.className).toBe('enemy-walk-sheet')
+      expect(scene.enemies[0].frame.src).toContain(`enemies/runtime/${enemyDefId.replaceAll('_', '-')}/walk-sheet.png`)
     }
   })
 
@@ -135,7 +160,7 @@ describe('deriveStageActors', () => {
     }
     const scene = deriveStageActors(state, 0)
 
-    expect(scene.enemies[0].xPct).toBe(70)
+    expect(scene.enemies[0].xPct).toBe(78)
   })
 
   it('walks newly streamed enemies in from offscreen before combat actions', () => {
