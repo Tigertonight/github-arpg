@@ -2,6 +2,7 @@ import { affixes, affixesById } from '../data/affixes'
 import { baseItemsById } from '../data/items'
 import { legendaryPowersForSlot } from '../data/legendaryPowers'
 import { lootTablesById } from '../data/lootTables'
+import { setIdByBaseItemId } from '../data/sets'
 import { createId } from '../domain/ids'
 import { getBuildTags, itemScore, rarityMeta, rarityOrder } from '../domain/formulas'
 import type { AffixRoll, BaseItemSlot, EntityId, EquipmentSlot, GameState, ItemInstance, LootFilterRule, Rarity } from '../domain/types'
@@ -32,6 +33,10 @@ export function createItem(tableId: string, stage: number, magicFind: number, rn
   const rolls = rollAffixes(affixCount, itemLevel, rng)
   const slot = resolveInstanceSlot(base.slot, rng)
   const legendaryPowerId = rarity === 'legendary' ? rollLegendaryPower(slot, rng) : undefined
+  // 套装：稀有及以上的基底有概率作为套装件掉落（rare 8% / epic 18% / legendary 35%）
+  const setEligible = setIdByBaseItemId[base.id]
+  const setRollChance = rarity === 'legendary' ? 0.35 : rarity === 'epic' ? 0.18 : rarity === 'rare' ? 0.08 : 0
+  const setId = setEligible && rng.next() < setRollChance ? setEligible : undefined
   const prefix = rarity === 'legendary' ? '血誓' : rarity === 'epic' ? '裂脉' : rarity === 'rare' ? '残红' : rarity === 'magic' ? '铭刻' : '旧制'
 
   return {
@@ -45,6 +50,7 @@ export function createItem(tableId: string, stage: number, magicFind: number, rn
     tags: [...base.tags, ...rolls.flatMap((roll) => affixesById[roll.affixId].tags)],
     createdAt: Date.now(),
     legendaryPowerId,
+    setId,
   }
 }
 

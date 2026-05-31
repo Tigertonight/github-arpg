@@ -18,7 +18,7 @@ import type {
   Rarity,
 } from '../domain/types'
 
-export const CURRENT_SAVE_VERSION = 8
+export const CURRENT_SAVE_VERSION = 10
 
 export { createStarterState }
 
@@ -101,6 +101,8 @@ export function migrateLegacyState(raw: string | null): GameState | null {
         stage: legacy.stage ?? 1,
         highestStage: legacy.stage ?? 1,
         kills: legacy.kills ?? 0,
+        torment: 0,
+        maxTormentUnlocked: 0,
       },
       combatLog: [
         { id: 'migration_log', text: '旧版营地记录已迁移为黑炉矿道存档。' },
@@ -159,6 +161,47 @@ export function migrateV7ToV8(state: any): GameState {
     ...state,
     version: 8,
     bossChoicePending: false,
+  } as GameState
+}
+
+/**
+ * v8 → v9 迁移：
+ * - 加 hero.skillProgress：每个已装备技能初始化 lvl 1, xp 0, runeChoices 全空
+ */
+export function migrateV8ToV9(state: any): GameState {
+  const skills = state.hero?.skills ?? []
+  const skillProgress: Record<string, any> = {}
+  for (const skill of skills) {
+    skillProgress[skill.skillId] = {
+      skillId: skill.skillId,
+      level: 1,
+      xp: 0,
+      runeChoices: { 5: null, 10: null, 15: null },
+    }
+  }
+  return {
+    ...state,
+    version: 9,
+    hero: {
+      ...state.hero,
+      skillProgress,
+    },
+  } as GameState
+}
+
+/**
+ * v9 → v10 迁移：
+ * - ProgressionState 加 torment / maxTormentUnlocked（默认 0）
+ */
+export function migrateV9ToV10(state: any): GameState {
+  return {
+    ...state,
+    version: 10,
+    progression: {
+      ...state.progression,
+      torment: state.progression?.torment ?? 0,
+      maxTormentUnlocked: state.progression?.maxTormentUnlocked ?? 0,
+    },
   } as GameState
 }
 

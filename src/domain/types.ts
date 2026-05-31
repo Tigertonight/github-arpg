@@ -168,6 +168,8 @@ export interface RuneDefinition {
   skillId: EntityId
   description: string
   tags: string[]
+  /** 解锁该 rune 所需的技能等级槽位（5/10/15）。旧 rune 未指定时按 5 处理。 */
+  slot?: 5 | 10 | 15
 }
 
 export interface SkillState {
@@ -176,15 +178,28 @@ export interface SkillState {
   cooldownRemainingMs: number
 }
 
+/** 技能等级 + 已选 rune 分支。每级 5/10/15 解锁一个 rune slot，玩家 3 选 1。 */
+export interface SkillProgress {
+  skillId: EntityId
+  level: number
+  xp: number
+  /** 各 slot 已选 rune；未达解锁等级时为 null。slot key 即解锁等级。 */
+  runeChoices: { 5: EntityId | null; 10: EntityId | null; 15: EntityId | null }
+}
+
+export type RuneSlotLevel = 5 | 10 | 15
+
 export interface Hero {
   id: EntityId
   name: string
-  classId: 'oathbreaker'
+  classId: 'oathbreaker' | 'ash_hunter' | 'grave_votary' | 'iron_gaoler'
   level: number
   xp: number
   currentLife: number
   equipment: EquipmentState
   skills: SkillState[]
+  /** 每个技能的 XP/等级/已选 rune。键为 skillId。 */
+  skillProgress: Record<EntityId, SkillProgress>
   /** 横向位置：0-100，沿 lane 从左到右。travel 时向 enemyGroup 推进，combat 时冻结。 */
   x: number
 }
@@ -269,6 +284,10 @@ export interface EnemyInstance {
   maxLife: number
   armor: number
   bleed: BleedState
+  /** oath_brand rune：被烙印的层数（最多 3）。仅持有该 rune 时累计。 */
+  brandStacks?: number
+  /** family trait 单次性状态：last_rite 留 1HP / bone_reform 复生概率，每场战斗仅触发一次。 */
+  traitConsumed?: boolean
   /** 队形槽位。渲染位置按这个稳定槽位计算，避免前排死亡后后排因数组下标变化瞬移。 */
   formationSlot?: number
   /** 战斗中补位刷新的入场时间。存在时 UI 会先播放从屏幕外走入的动作。 */
@@ -323,17 +342,41 @@ export interface InventoryState {
   filter: LootFilterRule[]
 }
 
+/** 每日目标种类：杀敌数、推进层数、捡到稀有+ 物品 */
+export type DailyGoalKind = 'kill' | 'stage' | 'rareLoot'
+
+export interface DailyGoal {
+  id: DailyGoalKind
+  label: string
+  target: number
+  progress: number
+  rewardGold: number
+  rewardShards: number
+  /** 已领取奖励 */
+  claimed: boolean
+}
+
+export interface DailyGoalsState {
+  /** 当前一组目标对应的 YYYY-MM-DD 日期。新日期会重置 goals。 */
+  date: string
+  goals: DailyGoal[]
+}
+
 export interface ProgressionState {
   zoneId: EntityId
   stage: number
   highestStage: number
   kills: number
+  /** 当前难度档（0 = 普通；每档 +60% HP / +12 MF / +8 ilvl） */
+  torment: number
+  /** 已解锁的最高难度档；解锁条件：在该档下击败 stage 100 boss */
+  maxTormentUnlocked: number
 }
 
 export interface FloatingText {
   id: EntityId
   label: string
-  kind: 'hit' | 'bleed' | 'execute' | 'loot' | 'levelup' | 'miss' | 'crit'
+  kind: 'hit' | 'bleed' | 'execute' | 'loot' | 'levelup' | 'miss' | 'crit' | 'kill'
   xOffset?: number
 }
 
@@ -379,6 +422,63 @@ export interface GameState {
   pendingOfflineResult?: { elapsedMs: number; kills: number; goldGained: number; itemsFound: number }
   /** 已触发里程碑 ID 集合。 */
   triggeredMilestones?: string[]
+  /** 每日目标进度（每天首次进入游戏时刷新）。 */
+  dailyGoals?: DailyGoalsState
+  /** Cleave rune 战斗状态：势能层、命中计数等。仅在持有相应 rune 时使用。 */
+  cleaveRuneState?: {
+    /** momentum_charge：当前势能层数（0-5）。 */
+    momentumStacks: number
+    /** executioner_rhythm：cleave 命中计数（用于每 4 次强制暴击+处决）。 */
+    rhythmHitCount: number
+    /** chain_reaver：待结算的弹射列表（spawn 时写入，下个 tick 结算）。 */
+    pendingChainHits: { targetId: EntityId; damage: number; bleedStacks: number; resolveAtMs: number }[]
+  }
+  /** Sweep rune 战斗状态。仅在持有相应 rune 时使用。 */
+  sweepRuneState?: {
+    /** tearing_momentum：撕裂势能层数（0-5），下次 sweep 命中时按 +20%/层结算后清空。 */
+    tearingStacks: number
+    /** marrow_split：当前 tick 内已触发过裂射（防同 tick 多次）。 */
+    marrowTriggeredAtMs: number
+  }
+  /** Execute rune 战斗状态。仅在持有相应 rune 时使用。 */
+  executeRuneState?: {
+    /** chained_execution：本场战斗内还能再用 1 次链式处决。每次进战重置为 1。 */
+    chainCharges: number
+    /** executioner_brand：被处决标记的目标 id 集合（下次任意命中必暴击后清除）。 */
+    brandedTargetIds: EntityId[]
+  }
+  /** Iron oath rune 战斗状态。仅在持有相应 rune 时使用。 */
+  oathRuneState?: {
+    /** oathbound_shield：armor +50% 持续到该时间（gameTimeMs）。 */
+    armorBuffUntilMs: number
+    /** vow_of_retribution：反伤 30% 持续到该时间。 */
+    retributionUntilMs: number
+    /** martyr_oath：殉道反弹持续到该时间。 */
+    martyrUntilMs: number
+  }
+  /** 敌人图鉴：每只 enemy 的遇见/击杀计数。key 为 enemyDefId。 */
+  bestiary?: Record<EntityId, BestiaryEntry>
+  /** 已解锁成就：key=achievementId, value 为解锁时间戳（gameTimeMs）。 */
+  unlockedAchievements?: Record<EntityId, { unlockedAtMs: number }>
+  /** 当前 zone 的临时词条事件（每 10 stage 进新 zone 时 roll 一次）。 */
+  zoneMod?: { zoneId: EntityId; modId: string; rolledAtStage: number }
+  /** 当前 stage 是否处于赤潮事件中（每个 stage 战斗触发时独立 roll）。 */
+  crimsonTideActive?: boolean
+  /** QA 沙盒模式：开启后跳过推关/写存档/zone事件，纯做美术验证。 */
+  qaMode?: boolean
+}
+
+export interface BestiaryEntry {
+  /** 是否曾经遇到（即使未击杀）。 */
+  encountered: boolean
+  /** 总击杀次数。 */
+  kills: number
+  /** 精英击杀。 */
+  eliteKills: number
+  /** boss 击杀。 */
+  bossKills: number
+  /** 首次击杀的 gameTimeMs；未击杀为 0。 */
+  firstKillAtMs: number
 }
 
 export interface DerivedItem {

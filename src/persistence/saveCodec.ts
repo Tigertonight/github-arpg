@@ -9,6 +9,8 @@ import {
   migrateV5ToV6,
   migrateV6ToV7,
   migrateV7ToV8,
+  migrateV8ToV9,
+  migrateV9ToV10,
 } from './migrations'
 import { createStarterState } from './starterState'
 
@@ -73,6 +75,8 @@ function upgradeSave(parsed: any): GameState | null {
   if (state.version === 5) state = migrateV5ToV6(state)
   if (state.version === 6) state = migrateV6ToV7(state)
   if (state.version === 7) state = migrateV7ToV8(state)
+  if (state.version === 8) state = migrateV8ToV9(state)
+  if (state.version === 9) state = migrateV9ToV10(state)
   if (state.version !== CURRENT_SAVE_VERSION) return null
   return state as GameState
 }

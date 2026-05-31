@@ -13,7 +13,7 @@ describe('deriveStageActors', () => {
     expect(scene.hero.transition).toBe('none')
     expect(scene.enemies.length).toBeGreaterThan(0)
     expect(scene.enemies[0].frame.kind).toBe('walk')
-    expect(scene.enemies[0].frame.src).toContain(`enemy-${state.enemyGroup.members[0].enemyDefId.replaceAll('_', '-')}-walk-sheet.png`)
+    expect(scene.enemies[0].frame.src).toContain(`enemies/runtime/${state.enemyGroup.members[0].enemyDefId.replaceAll('_', '-')}/walk-sheet.png`)
     expect(scene.enemies[0].transition).toBe(ENEMY_POSITION_TRANSITION)
   })
 
@@ -86,7 +86,7 @@ describe('deriveStageActors', () => {
     expect(scene.enemies[0].frame.src).toContain('enemies/runtime/forge-serpent/attack-sheet.png')
   })
 
-  it('keeps stable root action sheets for the first-zone enemy set', () => {
+  it('uses v2 runtime attack sheets for the first-zone enemy set', () => {
     const base = createStarterState()
     const enemyIds = [
       'bone_miner',
@@ -113,7 +113,7 @@ describe('deriveStageActors', () => {
 
       expect(scene.enemies[0].state).toBe('attack')
       expect(scene.enemies[0].frame.className).toContain('enemy-attack-sheet')
-      expect(scene.enemies[0].frame.src).toContain(`enemy-${enemyDefId.replaceAll('_', '-')}-attack-sheet.png`)
+      expect(scene.enemies[0].frame.src).toContain(`enemies/runtime/${enemyDefId.replaceAll('_', '-')}/attack-sheet.png`)
     }
   })
 

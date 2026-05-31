@@ -8,8 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "build:enemy-runtime": "node scripts/build-runtime-enemy-walk-sheets.mjs",
-    "audit:visuals": "node scripts/audit-visual-assets.mjs",
+    "build:enemy-runtime": "node scripts/build-enemy-runtime.mjs",
+    "build:hero-runtime": "node scripts/build-runtime-hero-action-sheets.mjs",
+    "audit:frames": "node scripts/audit-frame-stability.mjs",
+    "audit:source-frames": "node scripts/audit-source-frames.mjs",
+    "audit:runtime-sheets": "node scripts/audit-runtime-sheets.mjs",
+    "audit:regression": "node scripts/visual-regression.mjs",
+    "validate:enemy-sheets": "node scripts/validate-enemy-sheets.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

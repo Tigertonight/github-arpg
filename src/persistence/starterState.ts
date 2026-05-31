@@ -4,6 +4,7 @@ import {
   HERO_START_X,
 } from '../engine/progression'
 import { randomRng } from '../engine/rng'
+import { createInitialSkillProgress } from '../engine/skillProgression'
 import { createEmptyEquipment, deriveCombatStats } from '../domain/formulas'
 import { createId } from '../domain/ids'
 import type {
@@ -12,7 +13,7 @@ import type {
 } from '../domain/types'
 
 /** 与 migrations.ts 的 CURRENT_SAVE_VERSION 保持一致。 */
-const _STARTER_VERSION = 8
+const _STARTER_VERSION = 9
 
 export function createStarterState(): GameState {
   const now = Date.now()
@@ -75,6 +76,12 @@ export function createStarterState(): GameState {
         { skillId: 'execute', runeId: 'blood_debt', cooldownRemainingMs: 2600 },
         { skillId: 'iron_oath', runeId: 'guardian_oath', cooldownRemainingMs: 5000 },
       ],
+      skillProgress: {
+        cleave: createInitialSkillProgress('cleave'),
+        lacerating_sweep: createInitialSkillProgress('lacerating_sweep'),
+        execute: createInitialSkillProgress('execute'),
+        iron_oath: createInitialSkillProgress('iron_oath'),
+      },
     },
     resources: {
       gold: 0,
@@ -99,6 +106,8 @@ export function createStarterState(): GameState {
       stage: 1,
       highestStage: 1,
       kills: 0,
+      torment: 0,
+      maxTormentUnlocked: 0,
     },
     combatLog: [{ id: 'starter_log', text: '破誓骑士踏入黑炉矿道，流血构筑已装配。' }],
     floatingTexts: [],

@@ -1,7 +1,10 @@
 import { skillsById } from '../data/skills'
 import { gameAssetBase, getEnemyVisual, getHeroVisual } from '../data/visuals'
 import type { EnemyInstance, GameState, SkillState } from '../domain/types'
-import { getEnemyMemberViewX, getStageMotionState, HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT } from './motion'
+import { getAnimationFrame, getEnemyMemberViewX, getStageMotionState, HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT } from './motion'
+
+// 同一波怪物之间的帧偏移，让脚步不同步（避免方阵感）
+const ENEMY_FRAME_STAGGER_MS = 120
 
 export { HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT }
 export { gameAssetBase }
@@ -35,7 +38,7 @@ export interface EnemyActorView {
   state: EnemyVisualState
   styleVars: ActorStyleVars
   frame:
-    | { kind: 'walk'; className: string; src: string }
+    | { kind: 'walk'; className: string; src: string; frames: number; frameIndex: number }
     | { kind: 'static'; className: string; src: string }
 }
 
@@ -73,11 +76,15 @@ export function deriveStageActors(game: GameState, heroAttackFrame: number): Sta
     activeSkillId,
     hitFrameActive,
     isHitTick,
-    shakeClass: latestText?.kind === 'crit' || latestText?.kind === 'execute'
-      ? 'shake-crit'
-      : latestText?.kind === 'hit'
-        ? 'shake-hit'
-        : '',
+    shakeClass: (() => {
+      const hasKill = game.floatingTexts.some(t => t.kind === 'kill' && t.label === 'BOSS DOWN')
+      if (hasKill) return 'shake-boss-kill'
+      const hasEliteKill = game.floatingTexts.some(t => t.kind === 'kill' && t.label === 'KILL!')
+      if (hasEliteKill) return 'shake-kill'
+      if (latestText?.kind === 'crit' || latestText?.kind === 'execute') return 'shake-crit'
+      if (latestText?.kind === 'hit') return 'shake-hit'
+      return ''
+    })(),
     hero: {
       xPct: motion.heroViewX,
       state: isTraveling ? 'walk' : 'attack',
@@ -102,6 +109,21 @@ export function deriveStageActors(game: GameState, heroAttackFrame: number): Sta
       const idle = enemyVisual.actions.idle ?? walk
       const attack = enemyVisual.actions.attack ?? idle ?? walk
       const usesRuntimeWalk = walk?.src.includes('/enemies/runtime/') ?? false
+
+      // 帧索引基于 gameTimeMs：暂停时游戏时间停止，sheet 不再跳帧
+      // 不同 slot 加偏移，避免一波敌人同步迈步
+      const stagger = formationSlot * ENEMY_FRAME_STAGGER_MS
+      const walkFrames = walk?.frames ?? 4
+      const walkDuration = walk?.durationMs ?? 720
+      const attackFrames = attack?.frames ?? 4
+      const attackDuration = attack?.durationMs ?? 760
+      const rawWalkFrameIndex = getAnimationFrame(game.gameTimeMs + stagger, walkFrames, walkDuration)
+      const rawAttackFrameIndex = getAnimationFrame(game.gameTimeMs + stagger, attackFrames, attackDuration)
+      // runtime 敌人 sheet 第 3、4 帧素材残缺（导出脚本切错），只用前 2 帧。
+      // root motion 敌人（rust_hound 等）sheet 完整，按原帧数轮播。
+      const walkFrameIndex = usesRuntimeWalk ? rawWalkFrameIndex % 2 : rawWalkFrameIndex
+      const attackFrameIndex = usesRuntimeWalk ? rawAttackFrameIndex % 2 : rawAttackFrameIndex
+
       return {
         enemy,
         xPct: getEnemyMemberViewX(motion.enemyGroupViewX, formationSlot),
@@ -115,25 +137,32 @@ export function deriveStageActors(game: GameState, heroAttackFrame: number): Sta
           '--enemy-scale': enemyVisual.scale,
           '--enemy-anchor-x': enemyVisual.anchor.x,
           '--enemy-anchor-y': enemyVisual.anchor.y,
-          '--enemy-walk-frames': walk?.frames ?? 4,
-          '--enemy-attack-frames': attack?.frames ?? 2,
+          '--enemy-walk-frames': walkFrames,
+          '--enemy-attack-frames': attackFrames,
         },
         frame: isTraveling || isEntering
           ? {
               kind: 'walk',
               className: 'enemy-walk-sheet',
               src: walk?.src ?? idle?.src ?? '',
+              frames: walkFrames,
+              frameIndex: walkFrameIndex,
             }
           : isAttacking && attack
             ? {
                 kind: 'walk',
                 className: `enemy-attack-sheet enemy-attack-sheet-${attack.frames}`,
                 src: attack.src,
+                frames: attackFrames,
+                frameIndex: attackFrameIndex,
               }
           : {
               kind: 'walk',
               className: 'enemy-walk-sheet enemy-walk-sheet-idle',
               src: idle?.src ?? walk?.src ?? '',
+              frames: walkFrames,
+              // idle: 锁定第 0 帧
+              frameIndex: 0,
             },
       }
     }),

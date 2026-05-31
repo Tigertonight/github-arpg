@@ -19,21 +19,32 @@ export function isExecuteReady(skill: SkillState, enemy: EnemyInstance, exec: Ex
   return enemy.currentLife / enemy.maxLife <= exec.threshold || enemy.bleed.stacks >= 5
 }
 
+export interface HitMods {
+  /** 强制暴击（executioner_rhythm 等 rune 用）。 */
+  forceCrit?: boolean
+  /** 强制按处决伤害结算（executioner_rhythm 等 rune 用）。 */
+  forceExecute?: boolean
+  /** 额外伤害乘子（momentum_charge / lunge_strike / crimson_harvest / ironbound_vow 等）。 */
+  damageMultiplier?: number
+}
+
 export function physicalHit(
   stats: CombatStats,
   enemy: EnemyInstance,
   skill: SkillState,
   exec: ExecuteParams = DEFAULT_EXECUTE,
+  mods: HitMods = {},
 ): { damage: number; isCrit: boolean } {
   const definition = skillsById[skill.skillId]
   const armorReduction = enemy.armor / (enemy.armor + 180 + enemy.level * 12)
   const base = stats.physicalDamage * definition.damageScale
-  const executeReady = isExecuteReady(skill, enemy, exec)
+  const executeReady = mods.forceExecute || isExecuteReady(skill, enemy, exec)
   const bleedExecuteBonus = skill.runeId === 'blood_debt' ? enemy.bleed.stacks * 0.12 : 0
   const executeMultiplier = executeReady ? (1.8 + stats.executeDamage + bleedExecuteBonus) * exec.damageMult : 1
-  const isCrit = Math.random() * 100 < stats.critChance
+  const isCrit = mods.forceCrit ? true : Math.random() * 100 < stats.critChance
   const critMul = isCrit ? stats.critMultiplier : 1
-  return { damage: Math.max(0, Math.round(base * executeMultiplier * (1 - armorReduction) * critMul)), isCrit }
+  const runeMul = mods.damageMultiplier ?? 1
+  return { damage: Math.max(0, Math.round(base * executeMultiplier * (1 - armorReduction) * critMul * runeMul)), isCrit }
 }
 
 export function bleedTickDamage(

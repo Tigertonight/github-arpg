@@ -1,4 +1,4 @@
-import type { EntityId, LootFilterRule } from '../domain/types'
+import type { DailyGoalKind, EntityId, LootFilterRule, RuneSlotLevel } from '../domain/types'
 
 /**
  * 玩家意图与系统驱动的所有 state 变更入口。
@@ -23,3 +23,9 @@ export type GameAction =
   | { type: 'resumeCombat' }
   | { type: 'retreat' }
   | { type: 'triggerMilestone'; milestoneId: string }
+  | { type: 'selectHero'; heroId: 'oathbreaker' | 'ash_hunter' | 'grave_votary' | 'iron_gaoler'; heroName: string }
+  | { type: 'chooseSkillRune'; skillId: EntityId; slot: RuneSlotLevel; runeId: EntityId }
+  | { type: 'claimDailyGoal'; goalId: DailyGoalKind }
+  | { type: 'setTorment'; torment: number }
+  | { type: 'qaSetMode'; enabled: boolean }
+  | { type: 'qaSpawn'; enemyDefIds: EntityId[] }

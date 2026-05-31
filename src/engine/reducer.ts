@@ -6,7 +6,8 @@ import type { GameAction } from './actions'
 import { advanceCombat } from './combatLoop'
 import { createRng } from './rng'
 import { salvageValue } from './loot'
-import { zoneIdForStage, createEnemyGroupForStage } from './progression'
+import { zoneIdForStage, createEnemyGroupForStage, createEnemyGroupFromIds, TORMENT_MAX } from './progression'
+import { evaluateAchievements } from './achievements'
 
 export function reduce(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -41,6 +42,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         bossChoicePending: false,
+        crimsonTideActive: false,
         enemyGroup: createEnemyGroupForStage(nextZoneId, nextStage, rng, state.hero.x),
         progression: {
           ...state.progression,
@@ -62,6 +64,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         bossChoicePending: false,
+        crimsonTideActive: false,
         enemyGroup: createEnemyGroupForStage(retreatZoneId, retreatStage, rng, state.hero.x),
         stageMode: 'travel',
         stageModeUntil: 0,
@@ -79,8 +82,101 @@ export function reduce(state: GameState, action: GameAction): GameState {
         ...state,
         triggeredMilestones: [...(state.triggeredMilestones ?? []), action.milestoneId],
       }
+    case 'selectHero':
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          id: `hero_${action.heroId}`,
+          name: action.heroName,
+          classId: action.heroId,
+        },
+        combatLog: addLog(
+          state.combatLog,
+          action.heroId === 'oathbreaker'
+            ? '破誓骑士踏入战场。'
+            : `${action.heroName} 已选择，暂用通用战斗动作等待独立动作资源接入。`,
+        ),
+      }
+    case 'chooseSkillRune':
+      return chooseSkillRune(state, action.skillId, action.slot, action.runeId)
+    case 'claimDailyGoal':
+      return claimDailyGoal(state, action.goalId)
+    case 'setTorment':
+      return setTorment(state, action.torment)
+    case 'qaSetMode':
+      return {
+        ...state,
+        qaMode: action.enabled,
+        bossChoicePending: false,
+        crimsonTideActive: false,
+        zoneMod: undefined,
+        combatLog: addLog(state.combatLog, action.enabled ? '已进入 QA 沙盒模式。' : '已退出 QA 沙盒模式。'),
+      }
+    case 'qaSpawn':
+      return {
+        ...state,
+        enemyGroup: createEnemyGroupFromIds(action.enemyDefIds, state.hero.x),
+        stageMode: 'travel',
+        stageModeUntil: 0,
+        bossChoicePending: false,
+        crimsonTideActive: false,
+        floatingTexts: [],
+        combatLog: addLog(state.combatLog, `QA 出怪 ×${Math.min(action.enemyDefIds.length, 4)}。`),
+      }
     default:
       return state
+  }
+}
+
+function setTorment(state: GameState, torment: number): GameState {
+  const clamped = Math.max(0, Math.min(TORMENT_MAX, Math.floor(torment)))
+  if (clamped > state.progression.maxTormentUnlocked) return state
+  if (clamped === state.progression.torment) return state
+  return {
+    ...state,
+    progression: { ...state.progression, torment: clamped },
+  }
+}
+
+function claimDailyGoal(state: GameState, goalId: string): GameState {
+  if (!state.dailyGoals) return state
+  const goal = state.dailyGoals.goals.find((g) => g.id === goalId)
+  if (!goal || goal.claimed || goal.progress < goal.target) return state
+  return {
+    ...state,
+    dailyGoals: {
+      ...state.dailyGoals,
+      goals: state.dailyGoals.goals.map((g) => g.id === goalId ? { ...g, claimed: true } : g),
+    },
+    resources: {
+      ...state.resources,
+      gold: state.resources.gold + goal.rewardGold,
+      shards: state.resources.shards + goal.rewardShards,
+    },
+    combatLog: addLog(state.combatLog, `每日目标完成：${goal.label}（+${goal.rewardGold} 金币 +${goal.rewardShards} 裂片）。`),
+  }
+}
+
+function chooseSkillRune(state: GameState, skillId: string, slot: 5 | 10 | 15, runeId: string): GameState {
+  const progress = state.hero.skillProgress[skillId]
+  if (!progress) return state
+  // 必须达到解锁等级，且该 slot 还未选过（首次选择不可改）
+  if (progress.level < slot) return state
+  if (progress.runeChoices[slot] !== null) return state
+  return {
+    ...state,
+    hero: {
+      ...state.hero,
+      skillProgress: {
+        ...state.hero.skillProgress,
+        [skillId]: {
+          ...progress,
+          runeChoices: { ...progress.runeChoices, [slot]: runeId },
+        },
+      },
+    },
+    combatLog: addLog(state.combatLog, `${skillId} 解锁 rune：${runeId}（slot ${slot}）。`),
   }
 }
 
@@ -94,7 +190,7 @@ function equipItem(state: GameState, itemId: string): GameState {
   const pendingOfflineLootIds = state.inventory.pendingOfflineLootIds.filter((id) => id !== item.id)
   if (previous) inventoryIds.unshift(previous)
 
-  return {
+  const next: GameState = {
     ...state,
     hero: {
       ...state.hero,
@@ -110,6 +206,7 @@ function equipItem(state: GameState, itemId: string): GameState {
     },
     combatLog: addLog(state.combatLog, `换上 ${item.name}，装备评分 ${itemScore(item)}。`),
   }
+  return evaluateAchievements(next)
 }
 
 /**

@@ -43,7 +43,8 @@ describe('combat loop stage movement', () => {
       hero: { ...state.hero, x: heroAtKill },
       enemyGroup: {
         x: state.enemyGroup.x,
-        members: [{ ...single, currentLife: 1, bleed: { ...single.bleed } }],
+        // 用 bone_miner 避免 family trait（last_rite/bone_reform 等）拦截致命伤
+        members: [{ ...single, enemyDefId: 'bone_miner', rank: 'normal' as const, currentLife: 1, bleed: { ...single.bleed }, traitConsumed: true }],
       },
     }
     const next = advanceCombat(inCombat)

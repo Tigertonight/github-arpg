@@ -1,16 +1,24 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { zonesById } from '../data/enemies'
+import { enemies, zonesById } from '../data/enemies'
+import { getEnemyVisual } from '../data/visuals'
 import { baseItemsById } from '../data/items'
 import { legendaryPowersById } from '../data/legendaryPowers'
-import { skillsById, runesById } from '../data/skills'
+import { itemSetsById } from '../data/sets'
+import { skillsById, runes, runesById } from '../data/skills'
+import { hasPendingRuneChoice, MAX_SKILL_LEVEL, RUNE_SLOT_LEVELS, xpForLevel } from '../engine/skillProgression'
+import { TORMENT_MAX, TORMENT_UNLOCK_STAGE, tormentEnemyScalars, tormentLootScalars } from '../engine/progression'
+import { achievementsCatalog } from '../data/achievements'
+import { analyzeAllArchetypes, type RequirementStatus } from '../engine/buildPlanner'
+import { zoneModsById } from '../data/zoneEvents'
+import { traitLabel, traitOf } from '../engine/traits'
 import { getZoneVisual } from '../data/visuals'
-import { formatAffix, getBuildTags, itemScore, rarityMeta, slotLabels, statLabels } from '../domain/formulas'
+import { deriveCombatStats, formatAffix, getBuildTags, itemScore, rarityMeta, slotLabels, statLabels } from '../domain/formulas'
 import { affixesById } from '../data/affixes'
 import { useAnimationFrameIndex } from './motion'
 import { deriveStageActors, gameAssetBase, HERO_ATTACK_DURATION_MS, HERO_ATTACK_FRAME_COUNT } from './stageActors'
 import { uiIcons, type UiIconKey } from './uiIcons'
 import type { GameAction } from '../engine/actions'
-import type { CombatStats, EnemyInstance, EquipmentSlot, GameState, ItemInstance, LootFilterRule } from '../domain/types'
+import type { CombatStats, EnemyDefinition, EnemyInstance, EquipmentSlot, GameState, ItemInstance, LootFilterRule, RuneSlotLevel } from '../domain/types'
 
 // InventoryPanel 批量分解阈值回调参数类型
 interface InventoryPanelProps {
@@ -29,6 +37,7 @@ function rankWeight(rank: EnemyInstance['rank']): number {
 }
 
 function describeGroup(members: EnemyInstance[]): string {
+  if (members.length === 0) return '空旷无人'
   if (members.length === 1) return members[0].name
   return `${members[0].name} 等 ${members.length} 名敌人`
 }
@@ -49,6 +58,13 @@ const SKILL_ICONS: Record<string, UiIconKey> = {
   lacerating_sweep: 'chaos',
   execute: 'boss',
   iron_oath: 'equip',
+}
+
+const HERO_CLASS_LABELS: Record<string, string> = {
+  oathbreaker: '破誓骑士',
+  ash_hunter: '灰烬猎手',
+  grave_votary: '墓誓修女',
+  iron_gaoler: '铁狱执行官',
 }
 
 const STAT_ICON_SRC: Record<string, string> = {
@@ -102,14 +118,17 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
     [game, heroAttackFrame],
   )
   const members = game.enemyGroup.members
-  const lead = members.reduce(
-    (best, m) => (rankWeight(m.rank) > rankWeight(best.rank) ? m : best),
-    members[0],
-  )
+  const lead = members.length > 0
+    ? members.reduce(
+        (best, m) => (rankWeight(m.rank) > rankWeight(best.rank) ? m : best),
+        members[0],
+      )
+    : null
   const zone = zonesById[game.progression.zoneId] ?? zonesById.black_forge_mines
   const zoneVisual = getZoneVisual(game.progression.zoneId)
   const zoneAffixIds = zone.globalAffixIds
-  const heroLifePercent = Math.max(0, Math.round((game.hero.currentLife / (game.cachedStats?.life ?? 120)) * 100))
+  const heroMaxLife = game.cachedStats?.life ?? deriveCombatStats(game.hero.equipment, game.itemsById, game.hero.level).life
+  const heroLifePercent = Math.max(0, Math.round((game.hero.currentLife / heroMaxLife) * 100))
   const stageInZone = ((game.progression.stage - 1) % 10) + 1
   const progressPct = (stageInZone / 10) * 100
   const stageStyle = {
@@ -122,7 +141,7 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
   } as CSSProperties
   return (
     <div
-      className={`stage-panel stage-${game.stageMode} stage-ambient-${zoneVisual.ambient} stage-palette-${zoneVisual.palette} zone-${game.progression.zoneId} enemy-${lead.rank} ${scene.shakeClass}`}
+      className={`stage-panel stage-${game.stageMode} stage-ambient-${zoneVisual.ambient} stage-palette-${zoneVisual.palette} zone-${game.progression.zoneId} enemy-${lead?.rank ?? 'normal'} ${scene.shakeClass}`}
       style={stageStyle}
     >
       <div className="combat-hud">
@@ -130,12 +149,12 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
           <div className="hero-hud-portrait" />
           <div>
             <strong>{game.hero.name}</strong>
-            <span>Lv.{game.hero.level} / 破誓骑士</span>
+            <span>Lv.{game.hero.level} / {HERO_CLASS_LABELS[game.hero.classId] ?? game.hero.name}</span>
             <div className="hero-hud-bar-wrap">
               <div className="hero-hud-bar">
                 <b style={{ width: `${heroLifePercent}%` }} />
               </div>
-              <span className="hero-life-num">{game.hero.currentLife} / {game.cachedStats?.life ?? 120}</span>
+              <span className="hero-life-num">{game.hero.currentLife} / {heroMaxLife}</span>
             </div>
           </div>
         </div>
@@ -145,6 +164,19 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
           {zoneAffixIds.length > 0 && (
             <span className="zone-debuff-badge" title={`区域效果：${zoneAffixIds.join(', ')}`}>
               <img src={uiIcons.warning} alt="" />
+            </span>
+          )}
+          {game.zoneMod && game.zoneMod.zoneId === game.progression.zoneId && zoneModsById[game.zoneMod.modId] && (
+            <span
+              className="zone-mod-badge"
+              title={zoneModsById[game.zoneMod.modId].description}
+            >
+              {zoneModsById[game.zoneMod.modId].name}
+            </span>
+          )}
+          {game.crimsonTideActive && (
+            <span className="crimson-tide-badge" title="赤潮事件：敌人 +60% 生命 / +40% 伤害，掉落 magic find +80、金币 ×2">
+              ⚠ 赤潮
             </span>
           )}
           <div className="zone-progress-bar">
@@ -174,7 +206,7 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
           <strong>{game.lastDrop?.name ?? '等待掉落'}</strong>
         </div>
       </div>
-      {lead.rank === 'boss' && !isTraveling && (
+      {lead && lead.rank === 'boss' && !isTraveling && (
         <div className="boss-healthbar-track">
           <div className="boss-healthbar-label">
             <span className="boss-name-text">
@@ -258,6 +290,11 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
                   className={actor.frame.className}
                   src={actor.frame.src}
                   alt=""
+                  style={
+                    actor.frame.kind === 'walk'
+                      ? { transform: `translateX(-${actor.frame.frameIndex * (100 / actor.frame.frames)}%)` }
+                      : undefined
+                  }
                 />
               </div>
               {actor.showHealthbar ? (
@@ -266,10 +303,23 @@ export function StageView({ game, dispatch }: { game: GameState; dispatch?: (act
                 </div>
               ) : null}
               {actor.showCrown ? <div className="enemy-crown">{actor.enemy.rank === 'boss' ? 'BOSS' : 'ELITE'}</div> : null}
+              {actor.showCrown && (() => {
+                const t = traitOf(actor.enemy)
+                return t ? <div className="enemy-trait-badge">{traitLabel(t)}</div> : null
+              })()}
             </div>
           )
         })}
-        {game.lastDrop ? <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" /> : null}
+        {game.lastDrop ? (
+          <div
+            className={`loot-beam-wrap rarity-${game.lastDrop.rarity}`}
+            style={{ '--rarity': rarityMeta[game.lastDrop.rarity].color } as CSSProperties}
+          >
+            <img className="loot-beam" src={`${gameAssetBase}/loot-drop-beam.png`} alt="" />
+            <div className="loot-pop-ring" />
+            <div className="loot-pop-name">{game.lastDrop.name}</div>
+          </div>
+        ) : null}
         {game.floatingTexts.some(t => t.kind === 'levelup') && (
           <img
             className="vfx-levelup"
@@ -538,6 +588,9 @@ function ItemDetailPanel({
           </span>
           <h3>{item.name}</h3>
           <p>{baseItemsById[item.baseItemId]?.name ?? item.baseItemId}</p>
+          {item.setId && itemSetsById[item.setId] && (
+            <p className="item-set-tag">套装：{itemSetsById[item.setId].name}</p>
+          )}
         </div>
         <button type="button" className="item-detail-close" onClick={onClose} aria-label="关闭道具详情">
           ×
@@ -552,7 +605,7 @@ function ItemDetailPanel({
         <strong style={{ color: 'var(--muted)', fontSize: '0.74rem', letterSpacing: '0.06em' }}>词缀操作</strong>
         {item.affixes.map((affix, i) => (
           <div key={i} className={`affix-row${affix.locked ? ' affix-locked' : ''}`}>
-            <span className="affix-text">
+            <span className={`affix-text affix-tier-t${affix.tier}`}>
               {affixLabel(affix)}
             </span>
             <div className="affix-actions">
@@ -608,8 +661,8 @@ function ItemCompareColumn({ title, item, legendaryName }: { title: string; item
           <strong>{itemScore(item)}</strong>
           <small>{item.name}</small>
           <div className="affix-list compact">
-            {formatAffix(item).slice(0, 5).map((label) => (
-              <small key={label}>{label}</small>
+            {formatAffix(item).slice(0, 5).map((entry) => (
+              <small key={entry.label} className={`affix-tier-t${entry.tier}`}>{entry.label}</small>
             ))}
           </div>
           {legendaryName ? <em>{legendaryName}</em> : null}
@@ -636,65 +689,90 @@ const EQUIP_LAYOUT: Array<{ slot: EquipmentSlot; label: string }> = [
   { slot: 'relic',   label: '遗物' },
 ]
 
+// Paperdoll grid 4×3 — 显式给每个 slot 标网格位置
+const PAPERDOLL_POSITIONS: Record<EquipmentSlot, { row: number; col: number }> = {
+  helm:    { row: 1, col: 2 },
+  weapon:  { row: 2, col: 1 },
+  chest:   { row: 2, col: 2 },
+  offhand: { row: 2, col: 3 },
+  ring1:   { row: 3, col: 1 },
+  gloves:  { row: 3, col: 2 },
+  ring2:   { row: 3, col: 3 },
+  amulet:  { row: 4, col: 1 },
+  boots:   { row: 4, col: 2 },
+  relic:   { row: 4, col: 3 },
+}
+
+const PAPERDOLL_SLOTS: EquipmentSlot[] = [
+  'helm', 'weapon', 'chest', 'offhand', 'ring1', 'gloves', 'ring2', 'amulet', 'boots', 'relic',
+]
+
 export function EquipmentPanel({ game }: { game: GameState }) {
   const [hoverSlot, setHoverSlot] = useState<string | null>(null)
+
+  // 顶部汇总
+  const equipped = PAPERDOLL_SLOTS.map((s) => game.hero.equipment[s])
+    .filter(Boolean)
+    .map((id) => game.itemsById[id!])
+    .filter(Boolean) as ItemInstance[]
+  const totalScore = equipped.reduce((sum, it) => sum + itemScore(it), 0)
+  const filledCount = equipped.length
+  const totalSlots = PAPERDOLL_SLOTS.length
+  // 套装件数（按 setId 聚合）
+  const setCounts: Record<string, number> = {}
+  for (const it of equipped) {
+    if (it.setId) setCounts[it.setId] = (setCounts[it.setId] ?? 0) + 1
+  }
+  const activeSets = Object.entries(setCounts)
+    .map(([id, count]) => ({ name: itemSetsById[id]?.name ?? id, count }))
+
   return (
-    <div className="equip-body">
-      {/* 左列：武器 + 副手 */}
-      <div className="equip-col equip-col-left">
-        {(['weapon', 'offhand'] as EquipmentSlot[]).map((slot) => {
-          const meta = EQUIP_LAYOUT.find(e => e.slot === slot)!
-          const item = game.hero.equipment[slot] ? game.itemsById[game.hero.equipment[slot]!] ?? null : null
-          const legendary = item?.legendaryPowerId ? legendaryPowersById[item.legendaryPowerId] : undefined
-          return (
-            <div
-              key={slot}
-              className={`equip-slot${item ? ' equip-slot-filled' : ''}`}
-              style={item ? { '--rarity': rarityMeta[item.rarity].color } as CSSProperties : undefined}
-              onMouseEnter={() => setHoverSlot(slot)}
-              onMouseLeave={() => setHoverSlot(null)}
-            >
-              <div className="equip-slot-icon">
-                {item
-                  ? <img src={itemIconSrc(item.baseItemId)} alt={item.name} />
-                  : <img className="equip-slot-empty-icon" src={emptySlotIconSrc(slot)} alt="" />
-                }
-              </div>
-              <span className="equip-slot-label">{meta.label}</span>
-              {hoverSlot === slot && item ? (
-                <div className="equip-tooltip">
-                  <strong style={{ color: rarityMeta[item.rarity].color }}>{item.name}</strong>
-                  <small>{rarityMeta[item.rarity].label} · Lv.{item.itemLevel} · {itemScore(item)}分</small>
-                  {legendary ? <em>{legendary.name}</em> : null}
-                </div>
-              ) : null}
-            </div>
-          )
-        })}
+    <>
+      <div className="equip-summary">
+        <div className="equip-summary-stat">
+          <span>总评分</span>
+          <strong>{totalScore}</strong>
+        </div>
+        <div className="equip-summary-stat">
+          <span>已装备</span>
+          <strong>{filledCount}<small>/{totalSlots}</small></strong>
+        </div>
+        <div className="equip-summary-sets">
+          {activeSets.length === 0 ? (
+            <span className="equip-summary-empty">无套装</span>
+          ) : activeSets.map((s) => (
+            <span key={s.name} className="equip-summary-set-tag">{s.name} {s.count}</span>
+          ))}
+        </div>
       </div>
 
-      {/* 中列：头盔/胸甲/手套/靴子 */}
-      <div className="equip-col equip-col-center">
-        <div className="equip-body-silhouette" aria-hidden="true" />
-        {(['helm', 'chest', 'gloves', 'boots'] as EquipmentSlot[]).map((slot) => {
+      <div className="equip-paperdoll">
+        <div className="equip-paperdoll-silhouette" aria-hidden="true" />
+        {PAPERDOLL_SLOTS.map((slot) => {
+          const pos = PAPERDOLL_POSITIONS[slot]
           const meta = EQUIP_LAYOUT.find(e => e.slot === slot)!
           const item = game.hero.equipment[slot] ? game.itemsById[game.hero.equipment[slot]!] ?? null : null
           const legendary = item?.legendaryPowerId ? legendaryPowersById[item.legendaryPowerId] : undefined
           return (
             <div
               key={slot}
-              className={`equip-slot equip-slot-body equip-slot-${slot}${item ? ' equip-slot-filled' : ''}`}
-              style={item ? { '--rarity': rarityMeta[item.rarity].color } as CSSProperties : undefined}
+              className={`equip-cell${item ? ' equip-cell-filled' : ''}`}
+              style={{
+                gridRow: pos.row,
+                gridColumn: pos.col,
+                ...(item ? { '--rarity': rarityMeta[item.rarity].color } as CSSProperties : {}),
+              }}
               onMouseEnter={() => setHoverSlot(slot)}
               onMouseLeave={() => setHoverSlot(null)}
+              aria-label={meta.label}
             >
-              <div className="equip-slot-icon">
+              <div className="equip-cell-icon">
                 {item
                   ? <img src={itemIconSrc(item.baseItemId)} alt={item.name} />
-                  : <img className="equip-slot-empty-icon" src={emptySlotIconSrc(slot)} alt="" />
+                  : <img className="equip-cell-empty-icon" src={emptySlotIconSrc(slot)} alt="" />
                 }
               </div>
-              <span className="equip-slot-label">{meta.label}</span>
+              {item ? <span className="equip-cell-score">{itemScore(item)}</span> : null}
               {hoverSlot === slot && item ? (
                 <div className="equip-tooltip">
                   <strong style={{ color: rarityMeta[item.rarity].color }}>{item.name}</strong>
@@ -702,110 +780,266 @@ export function EquipmentPanel({ game }: { game: GameState }) {
                   {legendary ? <em>{legendary.name}</em> : null}
                 </div>
               ) : null}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* 右列：项链/戒指x2/遗物 */}
-      <div className="equip-col equip-col-right">
-        {(['amulet', 'ring1', 'ring2', 'relic'] as EquipmentSlot[]).map((slot) => {
-          const meta = EQUIP_LAYOUT.find(e => e.slot === slot)!
-          const item = game.hero.equipment[slot] ? game.itemsById[game.hero.equipment[slot]!] ?? null : null
-          const legendary = item?.legendaryPowerId ? legendaryPowersById[item.legendaryPowerId] : undefined
-          return (
-            <div
-              key={slot}
-              className={`equip-slot${item ? ' equip-slot-filled' : ''}`}
-              style={item ? { '--rarity': rarityMeta[item.rarity].color } as CSSProperties : undefined}
-              onMouseEnter={() => setHoverSlot(slot)}
-              onMouseLeave={() => setHoverSlot(null)}
-            >
-              <div className="equip-slot-icon">
-                {item
-                  ? <img src={itemIconSrc(item.baseItemId)} alt={item.name} />
-                  : <img className="equip-slot-empty-icon" src={emptySlotIconSrc(slot)} alt="" />
-                }
-              </div>
-              <span className="equip-slot-label">{meta.label}</span>
-              {hoverSlot === slot && item ? (
-                <div className="equip-tooltip">
-                  <strong style={{ color: rarityMeta[item.rarity].color }}>{item.name}</strong>
-                  <small>{rarityMeta[item.rarity].label} · Lv.{item.itemLevel} · {itemScore(item)}分</small>
-                  {legendary ? <em>{legendary.name}</em> : null}
+              {hoverSlot === slot && !item ? (
+                <div className="equip-tooltip equip-tooltip-empty">
+                  <strong>{meta.label}</strong>
+                  <small>未装备</small>
                 </div>
               ) : null}
             </div>
           )
         })}
       </div>
-    </div>
+    </>
   )
 }
 
 // 每个技能的颜色主题已从 data/skills.ts 的 SkillDefinition.color 字段获取
 
-export function SkillPanel({ game }: { game: GameState }) {
+export function SkillPanel({ game, onChooseRune }: { game: GameState; onChooseRune?: (skillId: string, slot: RuneSlotLevel, runeId: string) => void }) {
   const [hoverSkill, setHoverSkill] = useState<string | null>(null)
+  const [pickerSkillId, setPickerSkillId] = useState<string | null>(null)
   return (
-    <div className="skill-orb-rack">
-      {game.hero.skills.map((skill) => {
-        const definition = skillsById[skill.skillId]
-        const rune = runesById[skill.runeId]
-        const cooldown = Math.ceil(skill.cooldownRemainingMs / 1000)
-        const isReady = cooldown <= 0
-        const color = definition.color
-        const progress = isReady ? 1 : Math.max(0, 1 - skill.cooldownRemainingMs / definition.baseCooldownMs)
-        return (
-          <div
-            key={skill.skillId}
-            className={`skill-gem${isReady ? ' skill-gem-ready' : ''}`}
-            style={{ '--skill-color': color, '--skill-progress': progress } as CSSProperties}
-            onMouseEnter={() => setHoverSkill(skill.skillId)}
-            onMouseLeave={() => setHoverSkill(null)}
-          >
-            {/* 冒气圈“准就”动画 */}
-            <svg className="skill-gem-ring" viewBox="0 0 44 44" aria-hidden="true">
-              <circle cx="22" cy="22" r="19" className="skill-gem-ring-bg" />
-              <circle
-                cx="22" cy="22" r="19"
-                className="skill-gem-ring-fill"
-                style={{
-                  strokeDasharray: `${2 * Math.PI * 19}`,
-                  strokeDashoffset: `${2 * Math.PI * 19 * (1 - progress)}`,
-                }}
-              />
-            </svg>
-            <div className="skill-gem-face">
-              <span className="skill-gem-abbr">{definition.name.slice(0, 2)}</span>
-              {isReady
-                ? <span className="skill-gem-status skill-gem-auto">AUTO</span>
-                : <span className="skill-gem-status">{cooldown}s</span>
-              }
-            </div>
-            {hoverSkill === skill.skillId ? (
-              <div className="skill-gem-tooltip">
-                <strong>{definition.name}</strong>
-                <em>{rune.name}</em>
-                <p>{definition.automation}</p>
+    <>
+      <div className="skill-orb-rack">
+        {game.hero.skills.map((skill) => {
+          const definition = skillsById[skill.skillId]
+          const rune = runesById[skill.runeId]
+          const cooldown = Math.ceil(skill.cooldownRemainingMs / 1000)
+          const isReady = cooldown <= 0
+          const color = definition.color
+          const progress = isReady ? 1 : Math.max(0, 1 - skill.cooldownRemainingMs / definition.baseCooldownMs)
+          const skillProg = game.hero.skillProgress[skill.skillId]
+          const skillLevel = skillProg?.level ?? 1
+          const xpProgress = skillProg && skillLevel < MAX_SKILL_LEVEL
+            ? Math.min(1, skillProg.xp / Math.max(1, xpForLevel(skillLevel)))
+            : 1
+          const pendingRune = skillProg ? hasPendingRuneChoice(skillProg) : false
+          return (
+            <div
+              key={skill.skillId}
+              className={`skill-gem${isReady ? ' skill-gem-ready' : ''}${pendingRune ? ' skill-gem-rune-pending' : ''}`}
+              style={{ '--skill-color': color, '--skill-progress': progress } as CSSProperties}
+              onMouseEnter={() => setHoverSkill(skill.skillId)}
+              onMouseLeave={() => setHoverSkill(null)}
+              onClick={() => setPickerSkillId(skill.skillId)}
+              role="button"
+              tabIndex={0}
+            >
+              {/* 冒气圈"准就"动画 */}
+              <svg className="skill-gem-ring" viewBox="0 0 44 44" aria-hidden="true">
+                <circle cx="22" cy="22" r="19" className="skill-gem-ring-bg" />
+                <circle
+                  cx="22" cy="22" r="19"
+                  className="skill-gem-ring-fill"
+                  style={{
+                    strokeDasharray: `${2 * Math.PI * 19}`,
+                    strokeDashoffset: `${2 * Math.PI * 19 * (1 - progress)}`,
+                  }}
+                />
+              </svg>
+              <div className="skill-gem-face">
+                <span className="skill-gem-abbr">{definition.name.slice(0, 2)}</span>
+                {isReady
+                  ? <span className="skill-gem-status skill-gem-auto">AUTO</span>
+                  : <span className="skill-gem-status">{cooldown}s</span>
+                }
               </div>
-            ) : null}
+              <div className="skill-gem-level-badge">Lv.{skillLevel}</div>
+              <div className="skill-gem-xpbar"><span style={{ width: `${Math.round(xpProgress * 100)}%` }} /></div>
+              {pendingRune ? <div className="skill-gem-rune-dot" aria-label="可选 rune" /> : null}
+              {hoverSkill === skill.skillId ? (
+                <div className="skill-gem-tooltip">
+                  <strong>{definition.name} · Lv.{skillLevel}</strong>
+                  <em>{rune.name}</em>
+                  <p>{definition.automation}</p>
+                  <p className="skill-gem-tooltip-hint">点击查看 rune 进度</p>
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
+      {pickerSkillId ? (
+        <RunePickerModal
+          game={game}
+          skillId={pickerSkillId}
+          onClose={() => setPickerSkillId(null)}
+          onChoose={onChooseRune}
+        />
+      ) : null}
+    </>
+  )
+}
+
+function RunePickerModal({
+  game,
+  skillId,
+  onClose,
+  onChoose,
+}: {
+  game: GameState
+  skillId: string
+  onClose: () => void
+  onChoose?: (skillId: string, slot: RuneSlotLevel, runeId: string) => void
+}) {
+  const definition = skillsById[skillId]
+  const progress = game.hero.skillProgress[skillId]
+  const skillLevel = progress?.level ?? 1
+  const xpForNext = skillLevel < MAX_SKILL_LEVEL ? xpForLevel(skillLevel) : 0
+  const xpPct = progress && skillLevel < MAX_SKILL_LEVEL
+    ? Math.min(100, Math.round((progress.xp / Math.max(1, xpForNext)) * 100))
+    : 100
+  const color = definition.color
+  const [hoverRune, setHoverRune] = useState<string | null>(null)
+  return (
+    <div className="rune-picker-overlay" onClick={onClose}>
+      <div className="rune-tree" onClick={(e) => e.stopPropagation()} style={{ '--skill-color': color } as CSSProperties}>
+        <header className="rune-tree-header">
+          <div className="rune-tree-title">
+            <h3>{definition.name}</h3>
+            <span className="rune-tree-level">Lv.{skillLevel}<small>/{MAX_SKILL_LEVEL}</small></span>
           </div>
-        )
-      })}
+          {skillLevel < MAX_SKILL_LEVEL ? (
+            <div className="rune-tree-xpbar" title={`经验 ${progress?.xp ?? 0} / ${xpForNext}`}>
+              <span style={{ width: `${xpPct}%` }} />
+            </div>
+          ) : (
+            <div className="rune-tree-xpbar rune-tree-xpbar-max"><span style={{ width: '100%' }} /></div>
+          )}
+          <button type="button" className="rune-picker-close" onClick={onClose} aria-label="关闭">×</button>
+        </header>
+
+        <div className="rune-tree-body">
+          {/* 根节点：技能本体 */}
+          <div className="rune-tree-root">
+            <div className="rune-tree-root-orb">
+              <span>{definition.name.slice(0, 2)}</span>
+            </div>
+            <p className="rune-tree-root-desc">{definition.automation}</p>
+          </div>
+
+          {RUNE_SLOT_LEVELS.map((slot, slotIdx) => {
+            const unlocked = skillLevel >= slot
+            const chosenRuneId = progress?.runeChoices[slot] ?? null
+            const slotRunes = runes.filter((r) => r.skillId === skillId && r.slot === slot)
+            const prevTierResolved = slotIdx === 0
+              ? true
+              : !!progress?.runeChoices[RUNE_SLOT_LEVELS[slotIdx - 1]]
+            return (
+              <div
+                key={slot}
+                className={`rune-tree-tier${unlocked ? ' rune-tree-tier-unlocked' : ''}${chosenRuneId ? ' rune-tree-tier-chosen' : ''}`}
+              >
+                <div className={`rune-tree-connector${prevTierResolved && unlocked ? ' rune-tree-connector-active' : ''}`} aria-hidden="true" />
+                <div className="rune-tree-tier-label">
+                  <span className="rune-tree-tier-marker">Lv.{slot}</span>
+                  {unlocked
+                    ? (chosenRuneId ? <em className="rune-tree-tier-status rune-tree-tier-status-chosen">已选定</em> : <em className="rune-tree-tier-status rune-tree-tier-status-pending">请选择</em>)
+                    : <em className="rune-tree-tier-status rune-tree-tier-status-locked">未解锁</em>}
+                </div>
+                <div className="rune-tree-branches">
+                  {slotRunes.length === 0 ? (
+                    <div className="rune-empty">该技能暂无该 slot 的 rune（即将更新）</div>
+                  ) : slotRunes.map((rune) => {
+                    const isChosen = chosenRuneId === rune.id
+                    const isLocked = !unlocked
+                    const dimmed = !!chosenRuneId && !isChosen
+                    const canChoose = unlocked && !chosenRuneId && !!onChoose
+                    return (
+                      <button
+                        key={rune.id}
+                        type="button"
+                        className={[
+                          'rune-tree-node',
+                          isChosen ? 'rune-tree-node-chosen' : '',
+                          isLocked ? 'rune-tree-node-locked' : '',
+                          dimmed ? 'rune-tree-node-dimmed' : '',
+                          hoverRune === rune.id ? 'rune-tree-node-hover' : '',
+                        ].filter(Boolean).join(' ')}
+                        disabled={!canChoose}
+                        onClick={() => canChoose && onChoose?.(skillId, slot, rune.id)}
+                        onMouseEnter={() => setHoverRune(rune.id)}
+                        onMouseLeave={() => setHoverRune(null)}
+                      >
+                        <span className="rune-tree-node-orb" aria-hidden="true" />
+                        <strong className="rune-tree-node-name">{rune.name}</strong>
+                        <p className="rune-tree-node-desc">{rune.description}</p>
+                        {isChosen ? <span className="rune-tree-node-badge">✓ 已选</span> : null}
+                        {isLocked ? <span className="rune-tree-node-lock">🔒</span> : null}
+                      </button>
+                    )
+                  })}
+                </div>
+                {chosenRuneId && unlocked ? (
+                  <div className="rune-tree-tier-warning">⚠ 首次选定不可更改</div>
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function DailyGoalsPanel({ game, onClaim }: { game: GameState; onClaim?: (goalId: 'kill' | 'stage' | 'rareLoot') => void }) {
+  const goals = game.dailyGoals?.goals ?? []
+  if (goals.length === 0) return null
+  return (
+    <div className="daily-goals">
+      <h4 className="daily-goals-title">每日目标</h4>
+      <div className="daily-goals-list">
+        {goals.map((goal) => {
+          const pct = Math.min(100, Math.round((goal.progress / goal.target) * 100))
+          const done = goal.progress >= goal.target
+          return (
+            <div key={goal.id} className={`daily-goal${done ? ' daily-goal-done' : ''}${goal.claimed ? ' daily-goal-claimed' : ''}`}>
+              <div className="daily-goal-row">
+                <span className="daily-goal-label">{goal.label}</span>
+                <span className="daily-goal-progress">{Math.min(goal.progress, goal.target)}/{goal.target}</span>
+              </div>
+              <div className="daily-goal-bar"><span style={{ width: `${pct}%` }} /></div>
+              <div className="daily-goal-reward">
+                <span>+{goal.rewardGold} 金币</span>
+                <span>+{goal.rewardShards} 裂片</span>
+                {goal.claimed
+                  ? <span className="daily-goal-tag daily-goal-tag-claimed">已领取</span>
+                  : done
+                    ? <button type="button" className="daily-goal-claim" onClick={() => onClaim?.(goal.id)}>领取</button>
+                    : null
+                }
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
 export function LootFilterPanel({ rules, onToggle }: { rules: LootFilterRule[]; onToggle: (id: LootFilterRule['id']) => void }) {
+  const enabledCount = rules.filter(r => r.enabled).length
   return (
-    <div className="filter-list">
-      {rules.map((rule) => (
-        <label className="filter-row" key={rule.id}>
-          <input type="checkbox" checked={rule.enabled} onChange={() => onToggle(rule.id)} />
-          <span>{rule.label}</span>
-        </label>
-      ))}
+    <div className="filter-panel">
+      <div className="filter-panel-header">
+        <span>战利品过滤</span>
+        <strong>{enabledCount}<small>/{rules.length}</small></strong>
+      </div>
+      <div className="filter-chip-grid">
+        {rules.map((rule) => (
+          <button
+            key={rule.id}
+            type="button"
+            className={`filter-chip${rule.enabled ? ' filter-chip-on' : ''}`}
+            onClick={() => onToggle(rule.id)}
+            aria-pressed={rule.enabled}
+          >
+            <span className="filter-chip-dot" aria-hidden="true" />
+            <span className="filter-chip-label">{rule.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -814,22 +1048,411 @@ export function StatsPanel({ stats, game }: { stats: CombatStats; game: GameStat
   const xpPercent = Math.round(((game.hero.xp % 140) / 140) * 100)
   return (
     <>
-      <div className="stat-list">
-        <Stat label="英雄等级" value={game.hero.level} />
-        <Stat label="物理伤害" value={Math.round(stats.physicalDamage)} />
-        <Stat label="流血/秒" value={Math.round(stats.bleedDamage)} />
-        <Stat label="攻速" value={`${stats.attackSpeed.toFixed(2)}x`} />
-        <Stat label="生命上限" value={stats.life} />
-        <Stat label="装甲" value={Math.round(stats.armor)} />
-        <Stat label="混沌石" value={game.resources.chaosStones} />
-        <Stat label="魔找" value={`${Math.round(stats.magicFind)}%`} />
-      </div>
-      <div className="xp-row">
-        <span>经验</span>
-        <div className="xpbar">
+      <div className="stat-hero-card">
+        <div className="stat-hero-card-row">
+          <span className="stat-hero-card-name">{game.hero.name}</span>
+          <strong className="stat-hero-card-level">Lv.{game.hero.level}</strong>
+        </div>
+        <div className="stat-hero-card-xpbar">
           <span style={{ width: `${xpPercent}%` }} />
+        </div>
+        <span className="stat-hero-card-xpnum">经验 {xpPercent}%</span>
+      </div>
+
+      <div className="stat-group">
+        <h4 className="stat-group-title">攻击</h4>
+        <div className="stat-list compact">
+          <Stat label="物理伤害" value={Math.round(stats.physicalDamage)} />
+          <Stat label="攻速" value={`${stats.attackSpeed.toFixed(2)}x`} />
+          <Stat label="流血/秒" value={Math.round(stats.bleedDamage)} />
+          <Stat label="处决伤害" value={`${Math.round((stats.executeDamage - 1) * 100)}%`} />
+        </div>
+      </div>
+
+      <div className="stat-group">
+        <h4 className="stat-group-title">防御</h4>
+        <div className="stat-list compact">
+          <Stat label="生命上限" value={stats.life} />
+          <Stat label="装甲" value={Math.round(stats.armor)} />
+          <Stat label="闪避率" value={`${Math.round(stats.evasion ?? 0)}%`} />
+        </div>
+      </div>
+
+      <div className="stat-group">
+        <h4 className="stat-group-title">资源 / 收益</h4>
+        <div className="stat-list compact">
+          <Stat label="混沌石" value={game.resources.chaosStones} />
+          <Stat label="魔找" value={`${Math.round(stats.magicFind)}%`} />
         </div>
       </div>
     </>
+  )
+}
+
+const FAMILY_LABELS: Record<EnemyDefinition['family'], string> = {
+  undead: '亡灵',
+  demon: '恶魔',
+  cultist: '教徒',
+  construct: '构装',
+  beast: '野兽',
+  primordial: '原初',
+}
+
+const RANK_LABELS: Record<EnemyDefinition['rank'], string> = {
+  normal: '普通',
+  elite: '精英',
+  boss: 'BOSS',
+}
+
+export function BestiaryPanel({ game, onQaSpawn, onQaExit }: { game: GameState; onQaSpawn?: (ids: string[]) => void; onQaExit?: () => void }) {
+  const bestiary = game.bestiary ?? {}
+  const qa = !!game.qaMode
+  const [qaSelection, setQaSelection] = useState<string[]>([])
+  const toggleQaSelect = (defId: string) => {
+    setQaSelection((prev) => {
+      if (prev.includes(defId)) return prev.filter((id) => id !== defId)
+      if (prev.length >= 4) return prev
+      return [...prev, defId]
+    })
+  }
+  const totals = useMemo(() => {
+    let encountered = 0
+    let killed = 0
+    for (const def of enemies) {
+      const entry = bestiary[def.id]
+      if (entry?.encountered) encountered += 1
+      if (entry && entry.kills > 0) killed += 1
+    }
+    return { encountered, killed, total: enemies.length }
+  }, [bestiary])
+
+  const grouped = useMemo(() => {
+    const buckets: Record<EnemyDefinition['family'], EnemyDefinition[]> = {
+      undead: [], demon: [], cultist: [], construct: [], beast: [], primordial: [],
+    }
+    for (const def of enemies) buckets[def.family].push(def)
+    const rankOrder: Record<EnemyDefinition['rank'], number> = { normal: 0, elite: 1, boss: 2 }
+    for (const family of Object.keys(buckets) as Array<EnemyDefinition['family']>) {
+      buckets[family].sort((a, b) => rankOrder[a.rank] - rankOrder[b.rank] || a.name.localeCompare(b.name))
+    }
+    return buckets
+  }, [])
+
+  return (
+    <section className="bestiary-panel">
+      {qa ? (
+        <div className="bestiary-qa-bar">
+          <div className="bestiary-qa-bar-info">
+            <strong>QA 沙盒</strong>
+            <span>已选 {qaSelection.length} / 4</span>
+            <span className="bestiary-qa-hint">点击任意卡片选取怪物（最多 4 只），点击「开始遭遇战」生成。</span>
+          </div>
+          <div className="bestiary-qa-bar-actions">
+            <button
+              type="button"
+              className="bestiary-qa-btn bestiary-qa-btn-primary"
+              disabled={qaSelection.length === 0}
+              onClick={() => {
+                if (qaSelection.length === 0) return
+                onQaSpawn?.(qaSelection)
+                setQaSelection([])
+              }}
+            >
+              开始遭遇战
+            </button>
+            <button
+              type="button"
+              className="bestiary-qa-btn"
+              disabled={qaSelection.length === 0}
+              onClick={() => setQaSelection([])}
+            >
+              清空选择
+            </button>
+            <button
+              type="button"
+              className="bestiary-qa-btn bestiary-qa-btn-exit"
+              onClick={() => onQaExit?.()}
+            >
+              返回正常游戏
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <div className="bestiary-summary">
+        <span>击杀种类 <strong>{totals.killed}</strong> / {totals.total}</span>
+        <span>已遇见 <strong>{totals.encountered}</strong> / {totals.total}</span>
+      </div>
+      {(Object.keys(grouped) as Array<EnemyDefinition['family']>).map((family) => {
+        const list = grouped[family]
+        if (list.length === 0) return null
+        return (
+          <div className="bestiary-family" key={family}>
+            <h4 className="bestiary-family-title">{FAMILY_LABELS[family]} <span className="bestiary-family-count">({list.length})</span></h4>
+            <div className="bestiary-grid">
+              {list.map((def) => {
+                const entry = bestiary[def.id]
+                const seen = entry?.encountered ?? false
+                const killed = (entry?.kills ?? 0) > 0
+                const visual = getEnemyVisual(def.id)
+                const idleSrc = visual.actions.idle?.src
+                const isSelected = qa && qaSelection.includes(def.id)
+                const canSelectMore = qaSelection.length < 4
+                const cardClass = [
+                  'bestiary-card',
+                  qa
+                    ? 'bestiary-card-qa-base'
+                    : killed ? 'bestiary-card-killed' : seen ? 'bestiary-card-seen' : 'bestiary-card-locked',
+                  qa ? 'bestiary-card-qa' : '',
+                  isSelected ? 'bestiary-card-qa-selected' : '',
+                  qa && !isSelected && !canSelectMore ? 'bestiary-card-qa-disabled' : '',
+                ].filter(Boolean).join(' ')
+                return (
+                  <div
+                    key={def.id}
+                    className={cardClass}
+                    onClick={qa ? () => toggleQaSelect(def.id) : undefined}
+                    role={qa ? 'button' : undefined}
+                    tabIndex={qa ? 0 : undefined}
+                  >
+                    <div className="bestiary-card-portrait">
+                      {(qa || seen) && idleSrc ? (
+                        <span
+                          className="bestiary-card-portrait-img"
+                          style={{ backgroundImage: `url(${idleSrc})` }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <span className="bestiary-card-portrait-fallback" aria-hidden>?</span>
+                      )}
+                      <span className={`bestiary-card-rank bestiary-rank-${def.rank}`}>{RANK_LABELS[def.rank]}</span>
+                      {isSelected ? <span className="bestiary-card-qa-check" aria-hidden>✓</span> : null}
+                    </div>
+                    <div className="bestiary-card-body">
+                      <strong className="bestiary-card-name">{qa || killed || seen ? def.name : '???'}</strong>
+                      {killed ? (
+                        <div className="bestiary-card-stats">
+                          <span>击杀 {entry!.kills}</span>
+                          {entry!.eliteKills > 0 ? <span>· 精英 {entry!.eliteKills}</span> : null}
+                          {entry!.bossKills > 0 ? <span>· BOSS {entry!.bossKills}</span> : null}
+                        </div>
+                      ) : seen ? (
+                        <div className="bestiary-card-stats bestiary-card-stats-seen">已遇见 · 未击杀</div>
+                      ) : (
+                        <div className="bestiary-card-stats bestiary-card-stats-locked">未发现</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </section>
+  )
+}
+
+interface TormentPanelProps {
+  game: GameState
+  onSelect: (torment: number) => void
+}
+
+export function TormentPanel({ game, onSelect }: TormentPanelProps) {
+  const current = game.progression.torment
+  const unlocked = game.progression.maxTormentUnlocked
+  const highest = game.progression.highestStage
+  const tiers = Array.from({ length: TORMENT_MAX + 1 }, (_, i) => i)
+
+  return (
+    <section className="torment-panel mobile-panel-section">
+      <header className="torment-panel-head">
+        <strong>难度阶梯（Torment）</strong>
+        <span className="torment-panel-sub">
+          每档敌人 +60% 生命 / +25% 护甲，掉落 +12 magic find / +1 ilvl。
+        </span>
+        <span className="torment-panel-sub">
+          每击杀第 {TORMENT_UNLOCK_STAGE} × N 层 Boss 解锁下一档（当前已解锁 T{unlocked}，最高层 {highest}）。
+        </span>
+      </header>
+      <div className="torment-grid">
+        {tiers.map((tier) => {
+          const isLocked = tier > unlocked
+          const isCurrent = tier === current
+          const enemy = tormentEnemyScalars(tier)
+          const loot = tormentLootScalars(tier)
+          const lifeMul = `×${enemy.life.toFixed(2)}`
+          const armorMul = `×${enemy.armor.toFixed(2)}`
+          const cls = [
+            'torment-cell',
+            isCurrent ? 'torment-cell-current' : '',
+            isLocked ? 'torment-cell-locked' : 'torment-cell-unlocked',
+          ].filter(Boolean).join(' ')
+          return (
+            <button
+              key={tier}
+              type="button"
+              className={cls}
+              disabled={isLocked || isCurrent}
+              onClick={() => onSelect(tier)}
+            >
+              <div className="torment-cell-head">
+                <strong className="torment-cell-tier">T{tier}</strong>
+                {isCurrent ? <span className="torment-cell-badge">进行中</span>
+                  : isLocked ? <span className="torment-cell-badge torment-cell-badge-lock">未解锁</span>
+                    : <span className="torment-cell-badge torment-cell-badge-ok">可选</span>}
+              </div>
+              <div className="torment-cell-stats">
+                <span>HP {lifeMul}</span>
+                <span>护甲 {armorMul}</span>
+              </div>
+              <div className="torment-cell-stats torment-cell-loot">
+                <span>+{loot.magicFind} MF</span>
+                <span>+{loot.ilvlBonus} ilvl</span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+interface AchievementsPanelProps {
+  game: GameState
+}
+
+export function AchievementsPanel({ game }: AchievementsPanelProps) {
+  const unlocked = game.unlockedAchievements ?? {}
+  const polled = achievementsCatalog.filter((a) => a.trigger === 'polled')
+  const event = achievementsCatalog.filter((a) => a.trigger === 'event')
+  const totalUnlocked = Object.keys(unlocked).length
+
+  const renderCard = (def: typeof achievementsCatalog[number]) => {
+    const isUnlocked = !!unlocked[def.id]
+    const progress = def.progress ? def.progress(game) : isUnlocked ? 1 : 0
+    const pct = Math.round(progress * 100)
+    const rewardParts: string[] = []
+    if (def.reward.gold) rewardParts.push(`${def.reward.gold} 金币`)
+    if (def.reward.shards) rewardParts.push(`${def.reward.shards} 裂片`)
+    if (def.reward.chaosStones) rewardParts.push(`${def.reward.chaosStones} 混沌石`)
+    return (
+      <div
+        key={def.id}
+        className={`achievement-card${isUnlocked ? ' achievement-card-unlocked' : ''}${def.trigger === 'event' ? ' achievement-card-event' : ''}`}
+      >
+        <div className="achievement-card-head">
+          <strong className="achievement-card-title">{def.title}</strong>
+          {isUnlocked
+            ? <span className="achievement-card-badge achievement-card-badge-ok">已解锁</span>
+            : def.trigger === 'event'
+              ? <span className="achievement-card-badge achievement-card-badge-event">事件型</span>
+              : <span className="achievement-card-badge">{pct}%</span>}
+        </div>
+        <div className="achievement-card-desc">{def.description}</div>
+        {def.trigger === 'polled' && !isUnlocked && (
+          <div className="achievement-card-bar">
+            <div className="achievement-card-bar-fill" style={{ width: `${pct}%` }} />
+          </div>
+        )}
+        <div className="achievement-card-reward">奖励：{rewardParts.join(' / ') || '—'}</div>
+      </div>
+    )
+  }
+
+  return (
+    <section className="achievements-panel mobile-panel-section">
+      <header className="achievements-panel-head">
+        <strong>成就</strong>
+        <span className="achievements-panel-sub">
+          已解锁 {totalUnlocked} / {achievementsCatalog.length}
+        </span>
+      </header>
+      <div className="achievements-section-title">累计型</div>
+      <div className="achievements-grid">
+        {polled.map(renderCard)}
+      </div>
+      {event.length > 0 && (
+        <>
+          <div className="achievements-section-title">事件型（待挂钩）</div>
+          <div className="achievements-grid">
+            {event.map(renderCard)}
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
+
+interface BuildPlannerPanelProps {
+  game: GameState
+}
+
+const REQUIREMENT_KIND_LABEL: Record<'affix' | 'legendary' | 'rune', string> = {
+  affix: '词缀',
+  legendary: '传说',
+  rune: 'Rune',
+}
+
+const STATUS_LABEL: Record<RequirementStatus, string> = {
+  have: '已装',
+  owned: '已掉落',
+  missing: '未获得',
+  unknown: '?',
+}
+
+export function BuildPlannerPanel({ game }: BuildPlannerPanelProps) {
+  const archetypes = useMemo(() => analyzeAllArchetypes(game), [game])
+
+  return (
+    <section className="build-planner-panel mobile-panel-section">
+      <header className="build-planner-head">
+        <strong>流派规划</strong>
+        <span className="build-planner-sub">
+          根据当前装备与 rune 选择，估算每个流派的成型度。装备/选 rune 后会自动更新。
+        </span>
+      </header>
+      <div className="build-planner-grid">
+        {archetypes.map(({ definition, completion, items, haveCount, totalCount }) => {
+          const pct = Math.round(completion * 100)
+          return (
+            <div
+              key={definition.id}
+              className="build-card"
+              style={{ ['--build-accent' as never]: definition.accent } as CSSProperties}
+            >
+              <div className="build-card-head">
+                <span className="build-card-icon" aria-hidden>{definition.icon}</span>
+                <div className="build-card-titles">
+                  <strong className="build-card-name">{definition.name}</strong>
+                  <span className="build-card-tagline">{definition.tagline}</span>
+                </div>
+                <span className="build-card-pct">{pct}%</span>
+              </div>
+              <div className="build-card-bar">
+                <div className="build-card-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="build-card-counts">
+                {haveCount} / {totalCount} 已达成
+              </div>
+              <div className="build-card-desc">{definition.description}</div>
+              <ul className="build-card-reqs">
+                {items.length === 0 ? (
+                  <li className="build-card-req build-card-req-empty">无固定需求（自由发挥）</li>
+                ) : items.map((req) => (
+                  <li
+                    key={`${req.kind}_${req.id}`}
+                    className={`build-card-req build-card-req-${req.status}`}
+                  >
+                    <span className="build-card-req-kind">{REQUIREMENT_KIND_LABEL[req.kind]}</span>
+                    <span className="build-card-req-label">{req.label}</span>
+                    <span className="build-card-req-status">{STATUS_LABEL[req.status]}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }

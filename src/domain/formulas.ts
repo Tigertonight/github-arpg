@@ -1,5 +1,6 @@
 import { affixesById } from '../data/affixes'
 import { baseItemsById } from '../data/items'
+import { itemSets } from '../data/sets'
 import { createId } from './ids'
 import type { CombatStats, EquipmentState, ItemInstance, StatKey } from './types'
 
@@ -79,12 +80,37 @@ export function getItemStat(item: ItemInstance, stat: StatKey) {
   return implicit + affixValue
 }
 
+export function getActiveSetBonuses(equipped: ItemInstance[]): { setId: string; pieces: number; modifiers: { stat: StatKey; value: number }[] }[] {
+  const counts: Record<string, number> = {}
+  for (const item of equipped) {
+    if (item.setId) counts[item.setId] = (counts[item.setId] ?? 0) + 1
+  }
+  const active: { setId: string; pieces: number; modifiers: { stat: StatKey; value: number }[] }[] = []
+  for (const set of itemSets) {
+    const pieces = counts[set.id] ?? 0
+    if (pieces < 2) continue
+    const mods: { stat: StatKey; value: number }[] = []
+    for (const bonus of set.bonuses) {
+      if (pieces >= bonus.piecesRequired) mods.push(...bonus.modifiers)
+    }
+    if (mods.length > 0) active.push({ setId: set.id, pieces, modifiers: mods })
+  }
+  return active
+}
+
 export function deriveCombatStats(equipment: EquipmentState, itemsById: Record<string, ItemInstance>, level: number): CombatStats {
   const equipped = Object.values(equipment)
     .map((id) => (id ? itemsById[id] : null))
     .filter((item): item is ItemInstance => Boolean(item))
 
-  const sum = (stat: StatKey) => equipped.reduce((total, item) => total + getItemStat(item, stat), 0)
+  const setBonuses = getActiveSetBonuses(equipped)
+  const setSum = (stat: StatKey) =>
+    setBonuses.reduce(
+      (total, b) => total + b.modifiers.filter((m) => m.stat === stat).reduce((s, m) => s + m.value, 0),
+      0,
+    )
+  const sum = (stat: StatKey) =>
+    equipped.reduce((total, item) => total + getItemStat(item, stat), 0) + setSum(stat)
   const physicalDamage = 18 + level * 4 + sum('physicalDamage')
   const attackSpeed = Number((1 + sum('attackSpeed') / 100).toFixed(2))
   const bleedDamage = 8 + level * 1.8 + sum('bleedDamage')
@@ -136,12 +162,15 @@ export function itemScore(item: ItemInstance) {
   return Math.round(score)
 }
 
-export function formatAffix(item: ItemInstance) {
+export function formatAffix(item: ItemInstance): { label: string; tier: number }[] {
   return item.affixes.map((roll) => {
     const affix = affixesById[roll.affixId]
     const suffix = affix.stat === 'attackSpeed' || affix.stat === 'executeDamage' ? '%' : ''
     const total = affixRollTotal(roll)
-    return `[T${roll.tier}] +${total}${suffix} ${statLabels[affix.stat]}`
+    return {
+      label: `[T${roll.tier}] +${total}${suffix} ${statLabels[affix.stat]}`,
+      tier: roll.tier,
+    }
   })
 }
 

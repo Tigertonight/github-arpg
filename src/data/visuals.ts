@@ -139,12 +139,7 @@ const heroVisualEntries = {
       execute: { src: `${gameAssetBase}/heroes/oathbreaker/execute-sheet.png`, frames: 4, durationMs: 900 },
       shield: { src: `${gameAssetBase}/heroes/oathbreaker/shield-sheet.png`, frames: 4, durationMs: 900 },
     },
-    attackFrames: [
-      `${gameAssetBase}/oathbreaker-attack-aligned-frame-0.png`,
-      `${gameAssetBase}/oathbreaker-attack-aligned-frame-1.png`,
-      `${gameAssetBase}/oathbreaker-attack-aligned-frame-2.png`,
-      `${gameAssetBase}/oathbreaker-attack-aligned-frame-3.png`,
-    ],
+    attackFrames: [],
     vfx: {
       cleave: `${gameAssetBase}/vfx-cleave-impact.png`,
       lacerating_sweep: `${gameAssetBase}/vfx-sweep-trail.png`,
@@ -154,17 +149,64 @@ const heroVisualEntries = {
       burst: `${gameAssetBase}/vfx-ember-burst.png`,
     },
   },
+  ash_hunter: {
+    id: 'ash_hunter',
+    portrait: `${gameAssetBase}/generated-source/heroes/ash_hunter/preview.png`,
+    anchor: { x: 0.5, y: 1 },
+    scale: 1,
+    actions: {
+      idle: { src: `${gameAssetBase}/heroes/ash_hunter/runtime/idle-sheet.png`, frames: 4, durationMs: 1000 },
+      walk: { src: `${gameAssetBase}/heroes/ash_hunter/runtime/walk-sheet.png`, frames: 4, durationMs: 720 },
+      attack: { src: `${gameAssetBase}/heroes/ash_hunter/runtime/attack-sheet.png`, frames: 4, durationMs: 760 },
+      death: { src: `${gameAssetBase}/heroes/ash_hunter/runtime/death-sheet.png`, frames: 4, durationMs: 900 },
+    },
+    attackFrames: [],
+    vfx: {
+      cleave: `${gameAssetBase}/vfx-cleave-impact.png`,
+      crit: `${gameAssetBase}/vfx-crit-flash.png`,
+      burst: `${gameAssetBase}/vfx-ember-burst.png`,
+    },
+  },
+  grave_votary: {
+    id: 'grave_votary',
+    portrait: `${gameAssetBase}/generated-source/heroes/grave_votary/preview.png`,
+    anchor: { x: 0.5, y: 1 },
+    scale: 1,
+    actions: {
+      idle: { src: `${gameAssetBase}/heroes/grave_votary/runtime/idle-sheet.png`, frames: 4, durationMs: 1000 },
+      walk: { src: `${gameAssetBase}/heroes/grave_votary/runtime/walk-sheet.png`, frames: 4, durationMs: 900 },
+      attack: { src: `${gameAssetBase}/heroes/grave_votary/runtime/attack-sheet.png`, frames: 4, durationMs: 900 },
+      death: { src: `${gameAssetBase}/heroes/grave_votary/runtime/death-sheet.png`, frames: 4, durationMs: 900 },
+    },
+    attackFrames: [],
+    vfx: {
+      cleave: `${gameAssetBase}/vfx-oath-shield.png`,
+      crit: `${gameAssetBase}/vfx-crit-flash.png`,
+      burst: `${gameAssetBase}/vfx-ember-burst.png`,
+    },
+  },
+  iron_gaoler: {
+    id: 'iron_gaoler',
+    portrait: `${gameAssetBase}/generated-source/heroes/iron_gaoler/preview.png`,
+    anchor: { x: 0.5, y: 1 },
+    scale: 1.05,
+    actions: {
+      idle: { src: `${gameAssetBase}/heroes/iron_gaoler/runtime/idle-sheet.png`, frames: 4, durationMs: 1100 },
+      walk: { src: `${gameAssetBase}/heroes/iron_gaoler/runtime/walk-sheet.png`, frames: 4, durationMs: 820 },
+      attack: { src: `${gameAssetBase}/heroes/iron_gaoler/runtime/attack-sheet.png`, frames: 4, durationMs: 920 },
+      death: { src: `${gameAssetBase}/heroes/iron_gaoler/runtime/death-sheet.png`, frames: 4, durationMs: 900 },
+    },
+    attackFrames: [],
+    vfx: {
+      cleave: `${gameAssetBase}/vfx-cleave-impact.png`,
+      crit: `${gameAssetBase}/vfx-crit-flash.png`,
+      burst: `${gameAssetBase}/vfx-ember-burst.png`,
+    },
+  },
 } satisfies Record<string, HeroVisualDefinition>
 
 export const heroVisuals: Record<string, HeroVisualDefinition> = heroVisualEntries
 export const defaultHeroVisual = heroVisuals.oathbreaker
-
-const stableRootEnemyMotionIds = new Set([
-  'bone_miner',
-  'rust_hound',
-  'coal_cultist',
-  'black_forge_guard',
-])
 
 export const enemyVisuals = Object.fromEntries(
   enemies.map((enemy) => [enemy.id, makeEnemyVisual(enemy)]),
@@ -193,21 +235,11 @@ export function getEnemyVisual(enemyDefId: string): EnemyVisualDefinition {
 function makeEnemyVisual(enemy: EnemyDefinition): EnemyVisualDefinition {
   const slug = enemy.id.replaceAll('_', '-')
   const familyClass = enemyFamilyClass(enemy.family)
-  const rootWalk = `${gameAssetBase}/enemy-${slug}-walk-sheet.png`
   const runtimeBase = `${gameAssetBase}/enemies/runtime/${slug}`
-  const usesRootMotion = stableRootEnemyMotionIds.has(enemy.id)
-  const walk = usesRootMotion
-    ? { src: rootWalk, frames: 4, durationMs: 720 }
-    : { src: `${runtimeBase}/walk-sheet.png`, frames: 4, durationMs: 720 }
-  const idle = usesRootMotion
-    ? { src: rootWalk, frames: 4, durationMs: 900 }
-    : { src: `${runtimeBase}/idle-sheet.png`, frames: 4, durationMs: 900 }
-  const attack = stableRootEnemyMotionIds.has(enemy.id)
-    ? { src: `${gameAssetBase}/enemy-${slug}-attack-sheet.png`, frames: 2, durationMs: 620 }
-    : { src: `${runtimeBase}/attack-sheet.png`, frames: 4, durationMs: 760 }
-  const death = usesRootMotion
-    ? { src: rootWalk, frames: 4, durationMs: 900 }
-    : { src: `${runtimeBase}/death-sheet.png`, frames: 4, durationMs: 900 }
+  const walk = { src: `${runtimeBase}/walk-sheet.png`, frames: 4, durationMs: 720 }
+  const idle = { src: `${runtimeBase}/idle-sheet.png`, frames: 4, durationMs: 900 }
+  const attack = { src: `${runtimeBase}/attack-sheet.png`, frames: 4, durationMs: 760 }
+  const death = { src: `${runtimeBase}/death-sheet.png`, frames: 4, durationMs: 900 }
   return {
     enemyDefId: enemy.id,
     familyClass,
