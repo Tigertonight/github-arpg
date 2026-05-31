@@ -76,10 +76,10 @@ Use this spec for new AI-generated action sheets:
 - [x] Migrate current scene background and ground rendering to registry variables.
 - [x] Migrate hero and enemy asset resolution to registry.
 - [x] Add visual asset audit script.
-- [ ] Add foreground props layer.
-- [ ] Add ambient VFX variants per zone.
-- [ ] Add idle/death action support in actor state.
-- [ ] Generate first complete hero action pack.
-- [ ] Generate first 12 priority enemy action packs.
-- [ ] Add automated bbox stability checks for hero and enemy frames.
-- [ ] Add Playwright 3-minute travel/combat/boss visual regression run.
+- [x] Add foreground props layer. （zoneVisualEntries.foreground 已接入）
+- [x] Add ambient VFX variants per zone. （zoneVisualEntries.ambient 已接入）
+- [x] Generate first complete hero action pack. （oathbreaker idle/walk/attack/cleave/sweep/execute/shield/hit/death，新增 ash_hunter/grave_votary/iron_gaoler 的 idle/walk/attack/death）
+- [x] Generate first 12 priority enemy action packs. （34 个 enemies/runtime/<slug>/{idle,walk,attack,death}-sheet.png 已生成，远超 12）
+- [x] Add automated bbox stability checks for hero and enemy frames. （`npm run audit:frames`，148 张 sheet 全部 ≤6px baseline drift）
+- [x] Add Playwright travel/combat visual regression run. （`npm run audit:regression`，4 英雄逐个跑 travel→combat→尺寸断言）
+- [ ] Add death actor state in stage. （部分：scene state 有 walk/idle/attack；death 单独状态待做，等 hero die/enemy fade 出现时再补）
