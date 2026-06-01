@@ -103,17 +103,18 @@ function buildAction(slug, action, sourcePath, outDir) {
   const validCells = cells.filter((c) => c.bbox)
   if (!validCells.length) throw new Error('no valid frames after extraction')
 
-  // 2) 4 帧统一 scale：以最大 bbox 撑满 contentBudget
+  // 2) 4 帧统一 scale：以最大 bodyBbox（仅躯干）撑满 contentBudget
+  //    武器/特效允许超出 contentBudget，避免"挥剑/喷火"那一帧把整行拉小
   let maxW = 1, maxH = 1
   for (const c of validCells) {
-    const w = c.bbox.maxX - c.bbox.minX + 1
-    const h = c.bbox.maxY - c.bbox.minY + 1
+    const w = c.bodyBbox.maxX - c.bodyBbox.minX + 1
+    const h = c.bodyBbox.maxY - c.bodyBbox.minY + 1
     if (w > maxW) maxW = w
     if (h > maxH) maxH = h
   }
-  // 不允许放大（源已是目标分辨率）：scale ≤ 1
-  // 但若主体本身偏小，允许放大到 contentBudget
-  const scale = Math.min(CONTENT_BUDGET / maxW, CONTENT_BUDGET / maxH)
+  // scale 最高放大到 contentBudget；同时设置上限避免某行躯干过小被疯狂放大
+  const SCALE_CAP = 1.5
+  const scale = Math.min(CONTENT_BUDGET / maxW, CONTENT_BUDGET / maxH, SCALE_CAP)
 
   // 3) 单一 baseline：使用各帧 bbox.maxY 的最大值（最低脚底）
   //    其他帧上抬，但其相对躯干位置不变
@@ -315,7 +316,8 @@ function connectedComponentsFromMask(mask, w, h, cell) {
           }
         }
       }
-      if (pixels.length >= 10) components.push({ pixels, bbox, area: pixels.length })
+      // 最小连通分量：64 像素（≈ 8×8）。低于此阈值视作残片杂色。
+      if (pixels.length >= 64) components.push({ pixels, bbox, area: pixels.length })
     }
   }
   return components
