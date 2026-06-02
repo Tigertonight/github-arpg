@@ -21,7 +21,7 @@ import { uiIcons, type UiIconKey } from './ui/uiIcons'
 
 const TICK_MS = 900
 const HERO_ENTRY_KEY = 'forge-lane:selected-hero'
-type MobilePanel = 'inventory' | 'equipment' | 'skills' | 'stats' | 'filter' | 'bestiary' | 'torment' | 'achievements' | 'build'
+type MobilePanel = 'inventory' | 'equipment' | 'skills' | 'build' | 'challenge' | 'bestiary'
 
 type HeroChoiceId = 'oathbreaker' | 'ash_hunter' | 'grave_votary' | 'iron_gaoler'
 
@@ -116,12 +116,9 @@ const mobilePanels: Array<{ id: MobilePanel; label: string; icon: UiIconKey }> =
   { id: 'inventory', label: '背包', icon: 'bag' },
   { id: 'equipment', label: '装备', icon: 'equip' },
   { id: 'skills', label: '技能', icon: 'skills' },
-  { id: 'stats', label: '参数', icon: 'stats' },
-  { id: 'bestiary', label: '图鉴', icon: 'log' },
-  { id: 'torment', label: '难度', icon: 'boss' },
-  { id: 'achievements', label: '成就', icon: 'trophy' },
   { id: 'build', label: '流派', icon: 'skills' },
-  { id: 'filter', label: '筛选', icon: 'filter' },
+  { id: 'challenge', label: '挑战', icon: 'boss' },
+  { id: 'bestiary', label: '图鉴', icon: 'log' },
 ]
 
 function formatDuration(ms: number): string {
@@ -149,6 +146,7 @@ function App() {
   const [showBossKill, setShowBossKill] = useState(false)
   const [milestoneToast, setMilestoneToast] = useState<string | null>(null)
   const [showDailyGoals, setShowDailyGoals] = useState(false)
+  const [showHeroDrawer, setShowHeroDrawer] = useState(false)
   const stats = useMemo(
     () => game.cachedStats ?? deriveCombatStats(game.hero.equipment, game.itemsById, game.hero.level),
     [game.hero, game.itemsById, game.cachedStats],
@@ -282,16 +280,56 @@ function App() {
     />
   )
 
+  const renderInventoryHub = () => (
+    <div className="panel-stack">
+      {renderInventory()}
+      <section className="panel-subsection">
+        <div className="panel-subsection-header">
+          <img className="inline-art-icon" src={uiIcons.filter} alt="" />
+          <strong>掉落筛选</strong>
+          <span>自动分解低价值战利品</span>
+        </div>
+        {renderFilter()}
+      </section>
+    </div>
+  )
+
+  const renderChallengeHub = () => (
+    <div className="panel-stack">
+      <section className="panel-subsection">
+        <div className="panel-subsection-header">
+          <img className="inline-art-icon" src={uiIcons.trophy} alt="" />
+          <strong>每日目标</strong>
+          <span>任务进度与奖励领取</span>
+        </div>
+        <DailyGoalsPanel
+          game={game}
+          onClaim={(goalId) => dispatch({ type: 'claimDailyGoal', goalId })}
+        />
+      </section>
+      <section className="panel-subsection">
+        <div className="panel-subsection-header">
+          <img className="inline-art-icon" src={uiIcons.boss} alt="" />
+          <strong>难度阶梯</strong>
+          <span>调整 Torment 与推进目标</span>
+        </div>
+        <TormentPanel game={game} onSelect={(t) => dispatch({ type: 'setTorment', torment: t })} />
+      </section>
+    </div>
+  )
+
   const renderMobilePanel = () => {
     switch (activeMobilePanel) {
       case 'inventory':
-        return renderInventory()
+        return renderInventoryHub()
       case 'equipment':
         return <EquipmentPanel game={game} />
       case 'skills':
         return <SkillPanel game={game} onChooseRune={(skillId, slot, runeId) => dispatch({ type: 'chooseSkillRune', skillId, slot, runeId })} />
-      case 'stats':
-        return <StatsPanel game={game} stats={stats} />
+      case 'build':
+        return <BuildPlannerPanel game={game} />
+      case 'challenge':
+        return renderChallengeHub()
       case 'bestiary':
         return (
           <BestiaryPanel
@@ -300,14 +338,6 @@ function App() {
             onQaExit={exitQaMode}
           />
         )
-      case 'torment':
-        return <TormentPanel game={game} onSelect={(t) => dispatch({ type: 'setTorment', torment: t })} />
-      case 'achievements':
-        return <AchievementsPanel game={game} />
-      case 'build':
-        return <BuildPlannerPanel game={game} />
-      case 'filter':
-        return renderFilter()
       default:
         return null
     }
@@ -323,13 +353,13 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         {/* 左：游戏标题徽章 */}
-        <div className="game-badge">
+        <button type="button" className="game-badge game-badge-button" onClick={() => setShowHeroDrawer(true)} title="打开角色总览">
           <img className="game-badge-icon" src={uiIcons.gameBadge} alt="" />
           <div>
             <span className="game-badge-sub">Forge Lane</span>
             <span className="game-badge-title">破誓骑士</span>
           </div>
-        </div>
+        </button>
 
         {game.qaMode && (
           <button
@@ -368,7 +398,7 @@ function App() {
             <button
               type="button"
               className="res-pill res-pill-torment"
-              onClick={() => setActiveMobilePanel((current) => (current === 'torment' ? null : 'torment'))}
+              onClick={() => setActiveMobilePanel((current) => (current === 'challenge' ? null : 'challenge'))}
               title={`Torment T${game.progression.torment}（已解锁 T${game.progression.maxTormentUnlocked}）`}
             >
               <img className="res-icon" src={uiIcons.boss} alt="" />
@@ -409,9 +439,6 @@ function App() {
           </button>
           <button type="button" className="icon-button" onClick={() => dispatch({ type: 'togglePause' })}>
             {game.running ? <Pause size={16} /> : <Play size={16} />}
-          </button>
-          <button type="button" className="icon-button subtle" onClick={() => setShowHeroSelect(true)} title="角色选择">
-            角色
           </button>
           <button type="button" className="icon-button subtle" onClick={reset} title="重开">
             <img className="button-art-icon small" src={uiIcons.reset} alt="" />
@@ -530,6 +557,34 @@ function App() {
           </div>
         </div>
       )}
+
+      {showHeroDrawer ? (
+        <div className="mobile-sheet hero-drawer" role="dialog" aria-modal="true" aria-label="角色总览">
+          <button type="button" className="mobile-sheet-scrim" aria-label="关闭角色总览" onClick={() => setShowHeroDrawer(false)} />
+          <section className="mobile-sheet-panel hero-drawer-panel">
+            <header className="mobile-sheet-header">
+              <strong>角色总览</strong>
+              <button type="button" className="mobile-sheet-close" aria-label="关闭角色总览" onClick={() => setShowHeroDrawer(false)}>
+                <X size={20} />
+              </button>
+            </header>
+            <div className="mobile-sheet-body">
+              <section className="panel-subsection hero-summary-card">
+                <div className="panel-subsection-header">
+                  <img className="inline-art-icon" src={uiIcons.gameBadge} alt="" />
+                  <strong>破誓骑士</strong>
+                  <span>Lv.{game.hero.level} / 层 {game.progression.highestStage}</span>
+                </div>
+                <button type="button" className="hero-switch-button" onClick={() => { setShowHeroDrawer(false); setShowHeroSelect(true) }}>
+                  角色选择
+                </button>
+              </section>
+              <StatsPanel game={game} stats={stats} />
+              <AchievementsPanel game={game} />
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {activeMobilePanel ? (
         <div className="mobile-sheet" role="dialog" aria-modal="true" aria-label={activePanelMeta?.label}>

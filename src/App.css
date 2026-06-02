@@ -422,6 +422,19 @@
   gap: 10px;
 }
 
+.game-badge-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.game-badge-button:hover .game-badge-icon {
+  filter: drop-shadow(0 0 12px rgba(255, 209, 138, 0.5));
+}
+
 .game-badge-icon {
   display: block;
   width: 30px;
@@ -3321,6 +3334,57 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-subsection {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 10px;
+}
+
+.panel-subsection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--text-strong);
+}
+
+.panel-subsection-header span {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.hero-drawer-panel {
+  left: max(12px, calc((100vw - 1180px) / 2 + 12px));
+  right: auto;
+  width: min(560px, calc(100vw - 48px));
+  box-shadow: 18px 0 60px rgba(0, 0, 0, 0.58);
+}
+
+.hero-summary-card {
+  display: grid;
+  gap: 10px;
+}
+
+.hero-switch-button {
+  justify-self: start;
+  border: 1px solid rgba(200, 134, 10, 0.45);
+  border-radius: 6px;
+  background: rgba(200, 134, 10, 0.14);
+  color: var(--text-strong);
+  font-weight: 900;
+  padding: 8px 12px;
+  cursor: pointer;
 }
 
 .mobile-sheet-body .loot-panel,
